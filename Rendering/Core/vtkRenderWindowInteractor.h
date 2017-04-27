@@ -549,6 +549,15 @@ public:
   vtkGetMacro(LastRotation, double);
   //@}
 
+    //@{
+    /**
+     * Set/get the rotation center for the gesture in degrees, update LastRotation
+     */
+    void SetRotationCenter(double val[3]);
+    vtkGetVector3Macro(RotationCenter, double);
+    vtkGetVector3Macro(LastRotationCenter, double);
+    //@}
+
   //@{
   /**
    * Set/get the scale for the gesture, updates LastScale
@@ -814,6 +823,8 @@ protected:
   char  KeyCode;
   double Rotation;
   double LastRotation;
+  double RotationCenter[3];
+  double LastRotationCenter[3];
   double Scale;
   double LastScale;
   double Translation[2];

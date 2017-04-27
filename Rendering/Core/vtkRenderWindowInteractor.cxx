@@ -112,6 +112,12 @@ vtkRenderWindowInteractor::vtkRenderWindowInteractor()
   this->KeyCode = 0;
   this->Rotation = 0;
   this->LastRotation = 0;
+    this->RotationCenter[0] = 0;
+    this->RotationCenter[1] = 0;
+    this->RotationCenter[2] = 0;
+    this->LastRotationCenter[0] = 0;
+    this->LastRotationCenter[1] = 0;
+    this->LastRotationCenter[2] = 0;
   this->Scale = 0;
   this->LastScale = 0;
   this->RepeatCount = 0;
@@ -573,6 +579,23 @@ void vtkRenderWindowInteractor::SetRotation(double rot)
     this->Rotation = rot;
     this->Modified();
   }
+}
+
+//----------------------------------------------------------------------------
+void vtkRenderWindowInteractor::SetRotationCenter(double val[3])
+{
+    this->LastRotationCenter[0] = this->RotationCenter[0];
+    this->LastRotationCenter[1] = this->RotationCenter[1];
+    this->LastRotationCenter[2] = this->RotationCenter[2];
+    if (this->RotationCenter[0] != val[0] ||
+        this->RotationCenter[1] != val[1] ||
+        this->RotationCenter[2] != val[2])
+    {
+        this->RotationCenter[0] = val[0];
+        this->RotationCenter[1] = val[1];
+        this->RotationCenter[2] = val[2];
+        this->Modified();
+    }
 }
 
 //----------------------------------------------------------------------------

@@ -21,6 +21,7 @@
 #include "vtkRenderWindow.h"
 #include "vtkRenderWindowInteractor.h"
 #include "vtkRenderer.h"
+#include "vtkTransform.h"
 
 vtkStandardNewMacro(vtkInteractorStyleTrackballCamera);
 
@@ -230,40 +231,51 @@ void vtkInteractorStyleTrackballCamera::OnMouseWheelBackward()
 //----------------------------------------------------------------------------
 void vtkInteractorStyleTrackballCamera::Rotate()
 {
-  if (this->CurrentRenderer == NULL)
-  {
-    return;
-  }
+    if (this->CurrentRenderer == NULL)
+    {
+        return;
+    }
+    vtkRenderWindowInteractor* rwi = this->Interactor;
+    vtkCamera* camera = this->CurrentRenderer->GetActiveCamera();
 
-  vtkRenderWindowInteractor *rwi = this->Interactor;
+    // Get info
+    int dx = rwi->GetLastEventPosition()[0] - rwi->GetEventPosition()[0];
+    int dy = rwi->GetLastEventPosition()[1] - rwi->GetEventPosition()[1];
+    int* size = this->CurrentRenderer->GetSize();
+    double* center = rwi->GetRotationCenter();
+    double* viewUp = camera->GetViewUp();
+    double v2[3];
+    vtkMath::Cross(camera->GetDirectionOfProjection(), viewUp, v2);
 
-  int dx = rwi->GetEventPosition()[0] - rwi->GetLastEventPosition()[0];
-  int dy = rwi->GetEventPosition()[1] - rwi->GetLastEventPosition()[1];
+    // Transform
+    camera->OrthogonalizeViewUp();
+    // translate to center
+    vtkTransform* transform = vtkTransform::New();
+    transform->Identity();
+    transform->Translate(center[0], center[1], center[2]);
+    // azimuth
+    transform->RotateWXYZ((360.0 * dx / size[0]) * this->MotionFactor, viewUp[0], viewUp[1], viewUp[2]);
+    // elevation
+    transform->RotateWXYZ((-360.0 * dy / size[1]) * this->MotionFactor, v2[0], v2[1], v2[2]);
+    // translate back
+    transform->Translate(-center[0], -center[1], -center[2]);
 
-  int *size = this->CurrentRenderer->GetRenderWindow()->GetSize();
+    // Apply transform
+    camera->ApplyTransform(transform);
+    camera->OrthogonalizeViewUp();
 
-  double delta_elevation = -20.0 / size[1];
-  double delta_azimuth = -20.0 / size[0];
+    if (this->AutoAdjustCameraClippingRange)
+    {
+        this->CurrentRenderer->ResetCameraClippingRange();
+    }
 
-  double rxf = dx * delta_azimuth * this->MotionFactor;
-  double ryf = dy * delta_elevation * this->MotionFactor;
+    if (rwi->GetLightFollowCamera())
+    {
+        this->CurrentRenderer->UpdateLightsGeometryToFollowCamera();
+    }
 
-  vtkCamera *camera = this->CurrentRenderer->GetActiveCamera();
-  camera->Azimuth(rxf);
-  camera->Elevation(ryf);
-  camera->OrthogonalizeViewUp();
-
-  if (this->AutoAdjustCameraClippingRange)
-  {
-    this->CurrentRenderer->ResetCameraClippingRange();
-  }
-
-  if (rwi->GetLightFollowCamera())
-  {
-    this->CurrentRenderer->UpdateLightsGeometryToFollowCamera();
-  }
-
-  rwi->Render();
+    rwi->Render();
+    transform->Delete();
 }
 
 //----------------------------------------------------------------------------
