@@ -254,9 +254,9 @@ void vtkInteractorStyleTrackballCamera::Rotate()
     transform->Identity();
     transform->Translate(center[0], center[1], center[2]);
     // azimuth
-    transform->RotateWXYZ((360.0 * dx / size[0]) * this->MotionFactor, viewUp[0], viewUp[1], viewUp[2]);
+    transform->RotateWXYZ((360.0 * dx / size[0]) * this->MotionFactor * 0.1, viewUp[0], viewUp[1], viewUp[2]);
     // elevation
-    transform->RotateWXYZ((-360.0 * dy / size[1]) * this->MotionFactor, v2[0], v2[1], v2[2]);
+    transform->RotateWXYZ((-360.0 * dy / size[1]) * this->MotionFactor * 0.1, v2[0], v2[1], v2[2]);
     // translate back
     transform->Translate(-center[0], -center[1], -center[2]);
 
