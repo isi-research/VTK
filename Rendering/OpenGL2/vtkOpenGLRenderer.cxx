@@ -317,19 +317,20 @@ void vtkOpenGLRenderer::DeviceRenderTranslucentPolygonalGeometry()
   }
   else   // depth peeling.
   {
+#if GL_ES_VERSION_3_0 == 1
+    vtkErrorMacro("Built in Dual Depth Peeling is not supported on ES3. "
+      "Please see TestFramebufferPass.cxx for an example that should work "
+      "on OpenGL ES 3.");
+    this->UpdateTranslucentPolygonalGeometry();
+#else
     if (!this->DepthPeelingPass)
     {
       // Dual depth peeling requires:
       // - float textures (ARB_texture_float)
       // - RG textures (ARB_texture_rg)
       // - MAX blending (not available in ES2, but added in ES3).
-#if GL_ES_VERSION_3_0 == 1
-      // ES3 is supported:
-      bool dualDepthPeelingSupported = true;
-#else
       bool dualDepthPeelingSupported = context->GetContextSupportsOpenGL32() ||
           (GLEW_ARB_texture_float && GLEW_ARB_texture_rg);
-#endif
 
       // There's a bug on current mesa master that prevents dual depth peeling
       // from functioning properly, something in the texture sampler is causing
@@ -389,6 +390,7 @@ void vtkOpenGLRenderer::DeviceRenderTranslucentPolygonalGeometry()
     s.SetFrameBuffer(0);
     this->LastRenderingUsedDepthPeeling=1;
     this->DepthPeelingPass->Render(&s);
+#endif
   }
 
   vtkOpenGLCheckErrorMacro("failed after DeviceRenderTranslucentPolygonalGeometry");
