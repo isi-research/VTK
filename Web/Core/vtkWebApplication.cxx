@@ -183,7 +183,7 @@ vtkUnsignedCharArray* vtkWebApplication::StillRender(vtkRenderWindow* view, int 
   // then alone do a new rendering otherwise use the cached image.
   vtkNew<vtkWindowToImageFilter> w2i;
   w2i->SetInput(view);
-  w2i->SetMagnification(1);
+  w2i->SetScale(1);
   w2i->ReadFrontBufferOff();
   w2i->ShouldRerenderOff();
   w2i->FixBoundaryOn();
@@ -441,4 +441,12 @@ void vtkWebApplication::PrintSelf(ostream& os, vtkIndent indent)
 vtkObjectIdMap* vtkWebApplication::GetObjectIdMap()
 {
   return this->Internals->ObjectIdMap.GetPointer();
+}
+
+//----------------------------------------------------------------------------
+std::string vtkWebApplication::GetObjectId(vtkObject* obj)
+{
+  std::ostringstream oss;
+  oss << std::hex << static_cast<void*>(obj);
+  return oss.str();
 }

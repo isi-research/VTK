@@ -240,7 +240,7 @@ void vtkFieldData::Initialize()
 
 //----------------------------------------------------------------------------
 // Allocate data for each array.
-int vtkFieldData::Allocate(const vtkIdType sz, const vtkIdType ext)
+int vtkFieldData::Allocate(vtkIdType sz, vtkIdType ext)
 {
   int i;
   int status = 0;
@@ -397,7 +397,7 @@ vtkAbstractArray *vtkFieldData::GetAbstractArray(int i)
 {
   if ( i < 0 || i >= this->GetNumberOfArrays() || this->Data == NULL)
   {
-    return 0;
+    return NULL;
   }
   return this->Data[i];
 }

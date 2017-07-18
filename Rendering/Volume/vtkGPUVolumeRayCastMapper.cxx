@@ -50,7 +50,7 @@ vtkGPUVolumeRayCastMapper::vtkGPUVolumeRayCastMapper()
   this->RenderToImage              = 0;
   this->DepthImageScalarType       = VTK_FLOAT;
   this->ClampDepthToBackface       = 0;
-  this->UseJittering               = 1;
+  this->UseJittering               = 0;
   this->UseDepthPass               = 0;
   this->DepthPassContourValues     = NULL;
   this->SampleDistance             = 1.0;
@@ -329,7 +329,8 @@ int vtkGPUVolumeRayCastMapper::ValidateRender(vtkRenderer *ren,
     // We couldn't find scalars
     if ( !scalars )
     {
-      vtkErrorMacro("No scalars found on input.");
+      vtkErrorMacro("No scalars named \"" << this->ArrayName <<
+        "\" or with id " << this->ArrayId << " found on input.");
       goodSoFar = 0;
     }
     // Even if we found scalars, if they are field data scalars that isn't good
@@ -538,12 +539,14 @@ void vtkGPUVolumeRayCastMapper::CreateCanonicalView(
   double *center=volume->GetCenter();
   double bounds[6];
   volume->GetBounds(bounds);
+#if 0
   double d=sqrt((bounds[1]-bounds[0])*(bounds[1]-bounds[0]) +
                 (bounds[3]-bounds[2])*(bounds[3]-bounds[2]) +
                 (bounds[5]-bounds[4])*(bounds[5]-bounds[4]));
+#endif
 
   // For now use x distance - need to change this
-  d=bounds[1]-bounds[0];
+  double d=bounds[1]-bounds[0];
 
   // Set up the camera in parallel
   canonicalViewCamera->SetFocalPoint(center);

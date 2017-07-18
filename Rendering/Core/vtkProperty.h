@@ -45,6 +45,7 @@
 #define VTK_SURFACE   2
 
 class vtkActor;
+class vtkInformation;
 class vtkRenderer;
 class vtkShaderProgram;
 class vtkShaderDeviceAdapter2;
@@ -59,7 +60,7 @@ class VTKRENDERINGCORE_EXPORT vtkProperty : public vtkObject
 {
 public:
   vtkTypeMacro(vtkProperty,vtkObject);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   /**
    * Construct object with object color, ambient color, diffuse color,
@@ -264,6 +265,25 @@ public:
 
   //@{
   /**
+   * Turn on/off the visibility of vertices. On some renderers it is
+   * possible to render the vertices of geometric primitives separately
+   * from the interior.
+   */
+  vtkGetMacro(VertexVisibility, int);
+  vtkSetMacro(VertexVisibility, int);
+  vtkBooleanMacro(VertexVisibility, int);
+  //@}
+
+  //@{
+  /**
+   * Set/Get the color of primitive vertices (if vertex visibility is enabled).
+   */
+  vtkSetVector3Macro(VertexColor, double);
+  vtkGetVector3Macro(VertexColor, double);
+  //@}
+
+  //@{
+  /**
    * Set/Get the width of a Line. The width is expressed in screen units.
    * This is only implemented for OpenGL. The default is 1.0.
    */
@@ -463,9 +483,17 @@ public:
     VTK_TEXTURE_UNIT_7
   };
 
+  //@{
+  /**
+   * Set/Get the information object associated with the Property.
+   */
+  vtkGetObjectMacro(Information, vtkInformation);
+  virtual void SetInformation(vtkInformation*);
+  //@}
+
 protected:
   vtkProperty();
-  ~vtkProperty();
+  ~vtkProperty() VTK_OVERRIDE;
 
   /**
    * Computes composite color. Used by GetColor().
@@ -480,6 +508,7 @@ protected:
   double DiffuseColor[3];
   double SpecularColor[3];
   double EdgeColor[3];
+  double VertexColor[3];
   double Ambient;
   double Diffuse;
   double Specular;
@@ -492,6 +521,7 @@ protected:
   int Interpolation;
   int Representation;
   int EdgeVisibility;
+  int VertexVisibility;
   int BackfaceCulling;
   int FrontfaceCulling;
   bool Lighting;
@@ -509,6 +539,9 @@ protected:
   vtkTexture* GetTextureAtIndex(int index);
   int GetTextureUnitAtIndex(int index);
   int GetTextureUnit(const char* name);
+
+  // Arbitrary extra information associated with this Property.
+  vtkInformation* Information;
 
 private:
   vtkProperty(const vtkProperty&) VTK_DELETE_FUNCTION;

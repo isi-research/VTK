@@ -64,6 +64,7 @@ public:
   double *GetPoint(vtkIdType ptId) VTK_OVERRIDE;
   void GetPoint(vtkIdType id, double x[3]) VTK_OVERRIDE;
   vtkCell *GetCell(vtkIdType cellId) VTK_OVERRIDE;
+  vtkCell *GetCell(int i, int j, int k) VTK_OVERRIDE;
   void GetCell(vtkIdType cellId, vtkGenericCell *cell) VTK_OVERRIDE;
   void GetCellBounds(vtkIdType cellId, double bounds[6]) VTK_OVERRIDE;
   virtual vtkIdType FindPoint(double x, double y, double z)
@@ -97,13 +98,11 @@ public:
   void Initialize() VTK_OVERRIDE;
 
   /**
-   * \deprecated{This is for backward compatibility only - use SetExtent().}
    * Same as SetExtent(0, i-1, 0, j-1, 0, k-1)
    */
   virtual void SetDimensions(int i, int j, int k);
 
   /**
-   * \deprecated{This is for backward compatibility only - use SetExtent().}
    * Same as SetExtent(0, dims[0]-1, 0, dims[1]-1, 0, dims[2]-1)
    */
   virtual void SetDimensions(const int dims[3]);

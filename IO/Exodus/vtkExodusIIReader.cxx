@@ -1158,15 +1158,112 @@ int vtkExodusIIReaderPrivate::AssembleOutputCellMaps(
 }
 
 //-----------------------------------------------------------------------------
+vtkIdType vtkExodusIIReaderPrivate::GetPolyhedronFaceConnectivity(
+  vtkIdType fileLocalFaceId,
+  vtkIdType*& facePtIds)
+{
+  // I. Find the face block containing \a fileLocalFaceId.
+  //    An element may refer to faces anywhere in the file, not just in
+  //    a corresponding face block, so each face of an element may be
+  //    in a different face block.
+  if (this->BlockInfo.find(EX_FACE_BLOCK) == this->BlockInfo.end())
+  {
+    vtkWarningMacro("No face blocks in exodus file, but polyhedral cell requires at least 1");
+    return -1;
+  }
+  std::vector<BlockInfoType>& faceBlocks(this->BlockInfo[EX_FACE_BLOCK]);
+  std::vector<BlockInfoType>::const_iterator fbit;
+  int fbidx = 0;
+  vtkIdType blockLocalFaceId = -1;
+  for (
+    fbit = faceBlocks.begin();
+    fbit != faceBlocks.end() && (blockLocalFaceId = fileLocalFaceId + 1 - fbit->FileOffset) > fbit->Size;
+    ++fbit)
+  {
+    ++fbidx;
+    //std::cout << "Skipping block " << fbit->Id << " (" << fbit->Name << ") offset " << fbit->FileOffset << "\n";
+  }
+  if (fbit == faceBlocks.end() || blockLocalFaceId < 0)
+  {
+    vtkWarningMacro(
+      "Could not find a face block containing face " << fileLocalFaceId <<
+      " (block-relative " << blockLocalFaceId << ").");
+    return -1;
+  }
+  std::map<int, std::vector< std::vector< vtkIdType > > >::iterator fcit =
+    this->PolyhedralFaceConnArrays.find(fbidx);
+  if (fcit == this->PolyhedralFaceConnArrays.end())
+  {
+    // Add faces for the entire face-block to the cache (because
+    // the connectivity is run-length encoded). Hopefully each
+    // polyhedral element block will use many faces from each
+    // face block so the cost is amortized.
+    vtkSmartPointer<vtkIntArray> fconn =
+      vtkArrayDownCast<vtkIntArray>(
+        this->GetCacheOrRead(
+          vtkExodusIICacheKey(
+            -1, vtkExodusIIReader::FACE_BLOCK_CONN, fbidx, 0 )));
+    if (!fconn)
+    {
+      vtkWarningMacro(
+        "Face block " << fbidx
+        << " (id " << fbit->Id << ") missing its connectivity array.");
+      return -1;
+    }
+    vtkSmartPointer<vtkIntArray> ptsPerFace =
+      vtkArrayDownCast<vtkIntArray>(
+        this->GetCacheOrRead(
+          vtkExodusIICacheKey(
+            -1, vtkExodusIIReader::ENTITY_COUNTS, fbidx,
+            /* get counts for face-block as opposed to element-block: */ 1)));
+    if (!ptsPerFace)
+    {
+      vtkWarningMacro(
+        "Face block " << fbidx
+        << " (id " << fbit->Id << ") missing its points-per-face array.");
+      return -1;
+    }
+    // Decompose the whole face block into a ragged
+    // array (vector of vectors) to future lookups
+    // are fast:
+    static std::vector<std::vector<vtkIdType> > blank;
+    this->PolyhedralFaceConnArrays[fbidx] = blank;
+    fcit = this->PolyhedralFaceConnArrays.find(fbidx);
+    vtkIdType numFaces = ptsPerFace->GetNumberOfTuples();
+    fcit->second.resize(numFaces);
+    vtkIdType cc = 0;
+    for (vtkIdType ii = 0; ii < numFaces; ++ii)
+    {
+      int numPts = ptsPerFace->GetValue(ii);
+      std::vector<vtkIdType>& facePts(fcit->second[ii]);
+      facePts.resize(numPts);
+      for (int jj = 0; jj < numPts; ++jj)
+      {
+        facePts[jj] = fconn->GetValue(cc++);
+      }
+    }
+  }
+  // II. Now that we have a cache for the face block, look up the
+  //     one face in the block we currently need:
+  vtkIdType numPoints =
+    static_cast<vtkIdType>(fcit->second[blockLocalFaceId].size());
+  facePtIds = &fcit->second[blockLocalFaceId][0];
+  return numPoints;
+}
+
+//-----------------------------------------------------------------------------
+void vtkExodusIIReaderPrivate::FreePolyhedronFaceArrays()
+{
+  this->PolyhedralFaceConnArrays.clear();
+}
+
+//-----------------------------------------------------------------------------
 void vtkExodusIIReaderPrivate::InsertBlockPolyhedra(
   BlockInfoType* binfo,
   vtkIntArray* facesPerCell,
-  vtkIntArray* pointsPerFace,
-  vtkIntArray* exoCellConn,
-  vtkIntArray* exoFaceConn)
+  vtkIntArray* exoCellConn)
 {
   vtkIdType numCells = facesPerCell->GetMaxId() + 1;
-  vtkIdType numFaces = pointsPerFace->GetMaxId() + 1;
 
   // The Exodus file format is more compact than VTK's; it
   // allows multiple elements(cells) to refer to the same face so
@@ -1179,40 +1276,33 @@ void vtkExodusIIReaderPrivate::InsertBlockPolyhedra(
   // points per cell (across all its faces), which Exodus does
   // not provide.
 
-  // I. Break out face connectivity,
-  //    squeezing points along the way if needed.
-  std::vector<std::vector<vtkIdType> > facePointLists;
-  facePointLists.resize(numFaces);
-  vtkIdType curFacePoint = 0;
-  for (vtkIdType i = 0; i < numFaces; ++i)
-  {
-    std::vector<vtkIdType>& curPtList(facePointLists[i]);
-    for (vtkIdType j = 0; j < pointsPerFace->GetValue(i); ++j)
-    {
-      vtkIdType ptId = this->SqueezePoints ?
-        this->GetSqueezePointId(binfo, exoFaceConn->GetValue(curFacePoint++)) :
-        exoFaceConn->GetValue(curFacePoint++);
-      curPtList.push_back(ptId);
-    }
-  }
-
   // II. Insert cells using face-point connectivity.
   vtkIdType curCell = 0;
   vtkIdType curCellCurFace = 0;
+  std::vector<vtkIdType> vtkCellPts;
   for (vtkIdType i = 0; i < numCells; ++i)
   {
-    std::vector<vtkIdType> vtkCellPts;
+    vtkCellPts.clear();
     int numFacesThisCell = facesPerCell->GetValue(curCell++);
     for (vtkIdType j = 0; j < numFacesThisCell; ++j)
     {
       vtkIdType curFace = exoCellConn->GetValue(curCellCurFace++);
-      std::vector<vtkIdType>& curFacePts(facePointLists[curFace]);
-      vtkCellPts.push_back(static_cast<vtkIdType>(curFacePts.size()));
-      vtkCellPts.insert(vtkCellPts.end(), curFacePts.begin(), curFacePts.end());
+      //std::vector<vtkIdType>& curFacePts(facePointLists[curFace]);
+      vtkIdType* facePtsRaw;
+      vtkIdType numFacePts = this->GetPolyhedronFaceConnectivity(curFace, facePtsRaw);
+      // Copy face connectivity, optionally (and usually) mapping to squeezed-points for the block
+      vtkCellPts.push_back(numFacePts);
+      for (vtkIdType pp = 0; pp < numFacePts; ++pp)
+      {
+        vtkCellPts.push_back(this->SqueezePoints ?
+          this->GetSqueezePointId(binfo, facePtsRaw[pp]) :
+          facePtsRaw[pp]);
+      }
     }
     binfo->CachedConnectivity->InsertNextCell(
       VTK_POLYHEDRON, numFacesThisCell, &vtkCellPts[0]);
   }
+  this->FreePolyhedronFaceArrays();
 }
 
 //-----------------------------------------------------------------------------
@@ -1263,35 +1353,19 @@ void vtkExodusIIReaderPrivate::InsertBlockCells(
         vtkExodusIICacheKey( -1, vtkExodusIIReader::ELEM_BLOCK_FACE_CONN, obj, 0 )));
     if (efconn)
       efconn->Register(this);
-    vtkIntArray* fconn;
-    fconn = vtkArrayDownCast<vtkIntArray>(
-      this->GetCacheOrRead(
-        vtkExodusIICacheKey( -1, vtkExodusIIReader::FACE_BLOCK_CONN, obj, 0 )));
-    if (fconn)
-      fconn->Register(this);
-    vtkIntArray* ptsPerFace = NULL;
-    ptsPerFace = vtkArrayDownCast<vtkIntArray>(
-      this->GetCacheOrRead(
-        vtkExodusIICacheKey( -1, vtkExodusIIReader::ENTITY_COUNTS, obj, 1
-          )));
-    if (!efconn || !fconn || !ent || !ptsPerFace)
+    if (!efconn || !ent)
     {
       vtkWarningMacro(
-        << "Element (" << efconn << ") and face (" << fconn << ") block, "
-        << "plus number of faces per poly (" << ent << ") and "
-        << "number of points per face (" << ptsPerFace << ") are all required. "
+        << "Element block (" << efconn << ") and "
+        << "number of faces per poly (" << ent << ") arrays are both required. "
         << "Skipping block id " << binfo->Id << "; expect trouble." );
       binfo->Status = 0;
       if (ent) ent->UnRegister(this);
-      if (fconn) fconn->UnRegister(this);
       if (efconn) efconn->UnRegister(this);
       return;
     }
-    ptsPerFace->Register(this); // For sanity, own this for a moment
-    this->InsertBlockPolyhedra(binfo, ent, ptsPerFace, efconn, fconn);
-    ptsPerFace->UnRegister(this); // OK, we're done.
+    this->InsertBlockPolyhedra(binfo, ent, efconn);
     efconn->UnRegister(this);
-    fconn->UnRegister(this);
     ent->UnRegister(this);
     return;
   }
@@ -1684,7 +1758,9 @@ vtkDataArray* vtkExodusIIReaderPrivate::GetCacheOrRead( vtkExodusIICacheKey key 
     arr = vtkDataArray::CreateDataArray( VTK_DOUBLE );
     arr->SetName( this->GetGlobalVariableValuesArrayName() );
     arr->SetNumberOfComponents( 1 );
-    arr->SetNumberOfTuples( this->ArrayInfo[ vtkExodusIIReader::GLOBAL ].size() );
+    arr->SetNumberOfTuples(
+      static_cast<vtkIdType>(
+        this->ArrayInfo[ vtkExodusIIReader::GLOBAL ].size()));
 
     if ( ex_get_glob_vars( exoid, key.Time + 1, arr->GetNumberOfTuples(),
         arr->GetVoidPointer( 0 ) ) < 0 )
@@ -3362,7 +3438,7 @@ void vtkExodusIIReaderPrivate::RemoveBeginningAndTrailingSpaces( int len, char *
 
     if (cend < cbegin)
     {
-      sprintf(names[i], "null_%d", i);
+      snprintf(names[i], MAX_STR_LENGTH + 1, "null_%d", i);
       continue;
     }
 
@@ -3444,7 +3520,7 @@ const char* vtkExodusIIReaderPrivate::GetPartBlockInfo(int idx)
   std::vector<int> blkIndices = this->PartInfo[idx].BlockIndices;
   for (unsigned int i=0;i<blkIndices.size();i++)
   {
-    sprintf(buffer,"%d, ",blkIndices[i]);
+    snprintf(buffer,sizeof(buffer),"%d, ",blkIndices[i]);
     blocks += buffer;
   }
 
@@ -3469,7 +3545,7 @@ int vtkExodusIIReaderPrivate::GetPartStatus(int idx)
 }
 
 //-----------------------------------------------------------------------------
-int vtkExodusIIReaderPrivate::GetPartStatus(vtkStdString name)
+int vtkExodusIIReaderPrivate::GetPartStatus(const vtkStdString& name)
 {
   for (unsigned int i=0;i<this->PartInfo.size();i++)
   {
@@ -3493,7 +3569,7 @@ void vtkExodusIIReaderPrivate::SetPartStatus(int idx, int on)
 }
 
 //-----------------------------------------------------------------------------
-void vtkExodusIIReaderPrivate::SetPartStatus(vtkStdString name, int flag)
+void vtkExodusIIReaderPrivate::SetPartStatus(const vtkStdString& name, int flag)
 {
   for(unsigned int idx=0; idx<this->PartInfo.size(); ++idx)
   {
@@ -3533,7 +3609,7 @@ int vtkExodusIIReaderPrivate::GetMaterialStatus(int idx)
 }
 
 //-----------------------------------------------------------------------------
-int vtkExodusIIReaderPrivate::GetMaterialStatus(vtkStdString name)
+int vtkExodusIIReaderPrivate::GetMaterialStatus(const vtkStdString& name)
 {
   for (unsigned int i=0;i<this->MaterialInfo.size();i++)
   {
@@ -3558,7 +3634,7 @@ void vtkExodusIIReaderPrivate::SetMaterialStatus(int idx, int on)
 }
 
 //-----------------------------------------------------------------------------
-void vtkExodusIIReaderPrivate::SetMaterialStatus(vtkStdString name, int flag)
+void vtkExodusIIReaderPrivate::SetMaterialStatus(const vtkStdString& name, int flag)
 {
   for(unsigned int idx=0; idx<this->MaterialInfo.size(); ++idx)
   {
@@ -3598,7 +3674,7 @@ int vtkExodusIIReaderPrivate::GetAssemblyStatus(int idx)
 }
 
 //-----------------------------------------------------------------------------
-int vtkExodusIIReaderPrivate::GetAssemblyStatus(vtkStdString name)
+int vtkExodusIIReaderPrivate::GetAssemblyStatus(const vtkStdString& name)
 {
   for (unsigned int i=0;i<this->AssemblyInfo.size();i++)
   {
@@ -3623,7 +3699,7 @@ void vtkExodusIIReaderPrivate::SetAssemblyStatus(int idx, int on)
 }
 
 //-----------------------------------------------------------------------------
-void vtkExodusIIReaderPrivate::SetAssemblyStatus(vtkStdString name, int flag)
+void vtkExodusIIReaderPrivate::SetAssemblyStatus(const vtkStdString& name, int flag)
 {
   for(unsigned int idx=0; idx<this->AssemblyInfo.size(); ++idx)
   {
@@ -3702,7 +3778,7 @@ void vtkExodusIIReaderPrivate::PrintData( ostream& os, vtkIndent indent )
   os << indent << "AnimateModeShapes: " << this->AnimateModeShapes << "\n";
 
   // Print nodal variables
-  if ( this->ArrayInfo[ vtkExodusIIReader::NODAL ].size() > 0 )
+  if ( !this->ArrayInfo[ vtkExodusIIReader::NODAL ].empty() )
   {
     os << indent << "Nodal Arrays:\n";
     std::vector<ArrayInfoType>::iterator ai;
@@ -3722,7 +3798,7 @@ void vtkExodusIIReaderPrivate::PrintData( ostream& os, vtkIndent indent )
     {
       printBlock( os, indent.GetNextIndent(), bti->first, *bi );
     }
-    if ( this->ArrayInfo[ bti->first ].size() > 0 )
+    if ( !this->ArrayInfo[ bti->first ].empty() )
     {
       os << indent << "    Results variables:\n";
       std::vector<ArrayInfoType>::iterator ai;
@@ -3743,7 +3819,7 @@ void vtkExodusIIReaderPrivate::PrintData( ostream& os, vtkIndent indent )
     {
       printSet( os, indent.GetNextIndent(), sti->first, *si );
     }
-    if ( this->ArrayInfo[ sti->first ].size() > 0 )
+    if ( !this->ArrayInfo[ sti->first ].empty() )
     {
       os << indent << "    Results variables:\n";
       std::vector<ArrayInfoType>::iterator ai;
@@ -4093,7 +4169,7 @@ int vtkExodusIIReaderPrivate::RequestInformation()
         blockEntryFileOffset += binfo.Size;
         if (binfo.Name.length() == 0)
         {
-          snprintf( tmpName, 255, "Unnamed block ID: %d Type: %s",
+          snprintf( tmpName, sizeof(tmpName), "Unnamed block ID: %d Type: %s",
               ids[obj], binfo.TypeName.length() ? binfo.TypeName.c_str() : "NULL");
           binfo.Name = tmpName;
         }
@@ -4223,7 +4299,7 @@ int vtkExodusIIReaderPrivate::RequestInformation()
         this->GetInitialObjectStatus(obj_types[i], &sinfo);
         if (sinfo.Name.length() == 0)
         {
-          snprintf( tmpName, 255, "Unnamed set ID: %d", ids[obj]);
+          snprintf( tmpName, sizeof(tmpName), "Unnamed set ID: %d", ids[obj]);
           sinfo.Name = tmpName;
         }
         sortedObjects[sinfo.Id] = (int) this->SetInfo[obj_types[i]].size();
@@ -4254,8 +4330,8 @@ int vtkExodusIIReaderPrivate::RequestInformation()
         }
         minfo.Name = obj_names[obj];
         if (minfo.Name.length() == 0)
-        { // make up a name. FIXME: Possible buffer overflow w/ sprintf
-          snprintf( tmpName, 255, "Unnamed map ID: %d", ids[obj] );
+        {
+          snprintf( tmpName, sizeof(tmpName), "Unnamed map ID: %d", ids[obj] );
           minfo.Name = tmpName;
         }
         sortedObjects[minfo.Id] = (int) this->MapInfo[obj_types[i]].size();
@@ -4796,7 +4872,7 @@ void vtkExodusIIReaderPrivate::GetInitialObjectStatus( int otyp, ObjectInfoType 
 {
   for(unsigned int oidx=0; oidx<this->InitialObjectInfo[otyp].size(); oidx++)
   {
-    if( (this->InitialObjectInfo[otyp][oidx].Name != "" &&
+    if( (!this->InitialObjectInfo[otyp][oidx].Name.empty() &&
          objType->Name == this->InitialObjectInfo[otyp][oidx].Name) ||
         (this->InitialObjectInfo[otyp][oidx].Id != -1 &&
         objType->Id == this->InitialObjectInfo[otyp][oidx].Id) )

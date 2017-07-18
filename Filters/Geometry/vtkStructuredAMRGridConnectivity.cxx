@@ -113,7 +113,7 @@ void vtkStructuredAMRGridConnectivity::PrintSelf(
     this->GetGridExtent(gridId,gridExtent);
     this->PrintExtent(os,gridExtent);
     os << std::endl;
-    if( this->GhostedExtents.size() != 0 )
+    if( !this->GhostedExtents.empty() )
     {
       assert("pre: ghosted extents vector is not properly allocated" &&
              (this->GhostedExtents.size()/6 == this->NumberOfGrids) );
@@ -807,7 +807,7 @@ vtkStructuredAMRGridConnectivity::GetLocalCellCentersFromFinerLevel(
               } // END for all jj
             } // END for all ii
 
-            if( sourceIds.size() > 0 )
+            if( !sourceIds.empty() )
             {
               this->AverageFieldData(
                   this->GridCellData[nei.NeighborID],&sourceIds[0],
@@ -1338,7 +1338,7 @@ void vtkStructuredAMRGridConnectivity::MarkNodeProperty(
 
     if( this->IsNodeOnSharedBoundary(i,j,k, gridId, gridExt) )
     {
-      // NOTE: for AMR grids, all the grids own all of ther points so we don't
+      // NOTE: for AMR grids, all the grids own all of their points so we don't
       // ignore any of the points.
       // We might use SHARED in the future
       //vtkGhostArray::SetProperty(p,vtkGhostArray::SHARED);
@@ -1930,7 +1930,7 @@ vtkStructuredAMRGridConnectivity::GetAMRNeighbor(
   // STEP 1: Get orientation vector and ndim for the domain which is used to
   // determine which dimensions of the overlap extent to refine/coarsen as
   // necessary.
-  int ndim;
+  int ndim=0;
   int orient[3];
   this->GetOrientationVector(this->DataDescription,orient,ndim);
 

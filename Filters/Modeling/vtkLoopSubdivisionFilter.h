@@ -67,19 +67,17 @@ public:
 
 protected:
   vtkLoopSubdivisionFilter () {}
-  ~vtkLoopSubdivisionFilter () {}
-
-  virtual int RequestData(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
+  ~vtkLoopSubdivisionFilter () VTK_OVERRIDE {}
 
   int GenerateSubdivisionPoints (vtkPolyData *inputDS, vtkIntArray *edgeData,
                                  vtkPoints *outputPts,
-                                 vtkPointData *outputPD);
-  void GenerateEvenStencil (vtkIdType p1, vtkPolyData *polys,
+                                 vtkPointData *outputPD) VTK_OVERRIDE;
+  int  GenerateEvenStencil (vtkIdType p1, vtkPolyData *polys,
                             vtkIdList *stencilIds, double *weights);
   void GenerateOddStencil (vtkIdType p1, vtkIdType p2, vtkPolyData *polys,
                            vtkIdList *stencilIds, double *weights);
 
-  virtual int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
+  int RequestUpdateExtent(vtkInformation *, vtkInformationVector **, vtkInformationVector *) VTK_OVERRIDE;
 
 private:
   vtkLoopSubdivisionFilter(const vtkLoopSubdivisionFilter&) VTK_DELETE_FUNCTION;

@@ -563,8 +563,8 @@ int vtkHyperTreeGridSource::InitializeFromStringDescriptor()
         }
 
         // Store descriptor and material mask for current level
-        this->LevelDescriptors.push_back( descriptor.str().c_str() );
-        this->LevelMaterialMasks.push_back( mask.str().c_str() );
+        this->LevelDescriptors.push_back( descriptor.str() );
+        this->LevelMaterialMasks.push_back( mask.str() );
 
         // Check whether cursor is still at rool level
         if ( rootLevel )
@@ -665,10 +665,10 @@ int vtkHyperTreeGridSource::InitializeFromStringDescriptor()
   }
 
   // Push per-level descriptor and material mask if used
-  this->LevelDescriptors.push_back( descriptor.str().c_str() );
+  this->LevelDescriptors.push_back( descriptor.str() );
   if ( this->UseMaterialMask )
   {
-    this->LevelMaterialMasks.push_back( mask.str().c_str() );
+    this->LevelMaterialMasks.push_back( mask.str() );
   }
 
   // Reset maximum depth if fewer levels are described
@@ -690,7 +690,7 @@ int vtkHyperTreeGridSource::InitializeFromStringDescriptor()
   for ( unsigned int i = 1; i < nLevels; ++ i )
   {
     this->LevelBitsIndex.push_back(
-      LevelBitsIndex[i-1] + this->LevelDescriptors[i-1].length());
+      static_cast<vtkIdType>(LevelBitsIndex[i-1] + this->LevelDescriptors[i-1].length()));
   }
   this->LevelBitsIndexCnt = this->LevelBitsIndex;
 
@@ -784,7 +784,7 @@ int vtkHyperTreeGridSource::InitializeFromBitsDescriptor()
 
   // Calculate total level 0 grid size
   vtkIdType nTotal = this->LevelZeroMaterialIndex ?
-    this->LevelZeroMaterialMap.size() :
+    static_cast<vtkIdType>(this->LevelZeroMaterialMap.size()) :
     this->GridSize[0] * this->GridSize[1] * this->GridSize[2];
 
   // Parse descriptor and material mask if used
@@ -1139,7 +1139,7 @@ vtkBitArray* vtkHyperTreeGridSource::ConvertDescriptorStringToBitArray(
   const std::string& str )
 {
   vtkBitArray* desc = vtkBitArray::New();
-  desc->Allocate( str.length() );
+  desc->Allocate( static_cast<vtkIdType>(str.length()) );
   for ( std::string::const_iterator dit = str.begin();
     dit != str.end();  ++ dit )
   {

@@ -45,6 +45,7 @@
 #include "vtkObject.h"
 
 /* need for virtual function */
+class vtkInformation;
 class vtkRenderer;
 class vtkMatrix4x4;
 
@@ -56,7 +57,7 @@ class VTKRENDERINGCORE_EXPORT vtkLight : public vtkObject
 {
 public:
   vtkTypeMacro(vtkLight,vtkObject);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   /**
    * Create a light with the focal point at the origin and its position
@@ -283,10 +284,17 @@ public:
   vtkGetMacro(ShadowAttenuation,float);
   //@}
 
+  //@{
+  /**
+   * Set/Get the information object associated with the light.
+   */
+  vtkGetObjectMacro(Information, vtkInformation);
+  virtual void SetInformation(vtkInformation*);
+  //@}
 
 protected:
   vtkLight();
-  ~vtkLight();
+  ~vtkLight() VTK_OVERRIDE;
 
   double FocalPoint[3];
   double Position[3];
@@ -304,6 +312,9 @@ protected:
   double TransformedPositionReturn[3];
   int    LightType;
   float  ShadowAttenuation;
+
+  // Arbitrary extra information associated with this light.
+  vtkInformation* Information;
 
 private:
   vtkLight(const vtkLight&) VTK_DELETE_FUNCTION;

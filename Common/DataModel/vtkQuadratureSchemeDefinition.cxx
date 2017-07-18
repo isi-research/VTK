@@ -219,7 +219,6 @@ void vtkQuadratureSchemeDefinition::PrintSelf(ostream &sout, vtkIndent indent)
     }
     sout << ")" << endl;
   }
-  return;
 }
 
 
@@ -314,7 +313,7 @@ istream &operator>>(istream &sin, vtkQuadratureSchemeDefinition &def)
     vtkGenericWarningMacro("Empty definition found in stream.");
   }
 
-  // intialize the object
+  // initialize the object
   def.Initialize(cellType,nNodes,nQuadPts,SfWt,QWt);
 
   // clean up

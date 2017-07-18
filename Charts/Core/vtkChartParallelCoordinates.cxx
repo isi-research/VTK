@@ -344,7 +344,7 @@ vtkAxis* vtkChartParallelCoordinates::GetAxis(int index)
 //-----------------------------------------------------------------------------
 vtkIdType vtkChartParallelCoordinates::GetNumberOfAxes()
 {
-  return this->Storage->Axes.size();
+  return static_cast<vtkIdType>(this->Storage->Axes.size());
 }
 
 //-----------------------------------------------------------------------------
@@ -394,7 +394,7 @@ void vtkChartParallelCoordinates::CalculatePlotTransform()
   // In the case of parallel coordinates everything is plotted in a normalized
   // system, where the range is from 0.0 to 1.0 in the y axis, and in screen
   // coordinates along the x axis.
-  if (!this->Storage->Axes.size())
+  if (this->Storage->Axes.empty())
   {
     return;
   }
@@ -413,7 +413,6 @@ void vtkChartParallelCoordinates::CalculatePlotTransform()
 //-----------------------------------------------------------------------------
 void vtkChartParallelCoordinates::RecalculateBounds()
 {
-  return;
 }
 
 //-----------------------------------------------------------------------------

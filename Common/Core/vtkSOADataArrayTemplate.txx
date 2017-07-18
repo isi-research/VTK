@@ -180,6 +180,15 @@ void vtkSOADataArrayTemplate<ValueType>::InsertTuples(
 
 //-----------------------------------------------------------------------------
 template<class ValueType>
+void vtkSOADataArrayTemplate<ValueType>::FillTypedComponent(int compIdx,
+                                                            ValueType value)
+{
+  ValueType *buffer = this->Data[compIdx]->GetBuffer();
+  std::fill(buffer, buffer + this->GetNumberOfTuples(), value);
+}
+
+//-----------------------------------------------------------------------------
+template<class ValueType>
 void vtkSOADataArrayTemplate<ValueType>::SetArray(int comp, ValueType* array,
                                                   vtkIdType size,
                                                   bool updateMaxId,
@@ -193,7 +202,23 @@ void vtkSOADataArrayTemplate<ValueType>::SetArray(int comp, ValueType* array,
     return;
   }
 
-  this->Data[comp]->SetBuffer(array, size, save, deleteMethod);
+  if(deleteMethod == VTK_DATA_ARRAY_DELETE)
+  {
+    this->Data[comp]->SetBuffer(array, size, save, ::operator delete[] );
+  }
+  else if(deleteMethod == VTK_DATA_ARRAY_ALIGNED_FREE)
+  {
+#ifdef _WIN32
+    this->Data[comp]->SetBuffer(array, size, save, _aligned_free);
+#else
+    this->Data[comp]->SetBuffer(array, size, save, free);
+#endif
+  }
+  else
+  {
+    this->Data[comp]->SetBuffer(array, size, save, free);
+  }
+
   if (updateMaxId)
   {
     this->Size = numComps * size;
@@ -269,7 +294,7 @@ void *vtkSOADataArrayTemplate<ValueType>::GetVoidPointer(vtkIdType valueIdx)
     this->AoSCopy = vtkBuffer<ValueType>::New();
   }
 
-  if (!this->AoSCopy->Allocate(numValues))
+  if (!this->AoSCopy->Allocate(static_cast<vtkIdType>(numValues)))
   {
     vtkErrorMacro(<<"Error allocating a buffer of " << numValues << " '"
                   << this->GetDataTypeAsString() << "' elements.");

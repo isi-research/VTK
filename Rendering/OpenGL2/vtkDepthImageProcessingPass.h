@@ -56,32 +56,14 @@ Ph.D. thesis of Christian BOUCHENY.
 
 class vtkOpenGLRenderWindow;
 class vtkDepthPeelingPassLayerList; // Pimpl
-class vtkFrameBufferObject;
+class vtkOpenGLFramebufferObject;
 class vtkTextureObject;
 
 class VTKRENDERINGOPENGL2_EXPORT vtkDepthImageProcessingPass : public vtkImageProcessingPass
 {
 public:
   vtkTypeMacro(vtkDepthImageProcessingPass, vtkImageProcessingPass);
-  void PrintSelf(ostream& os, vtkIndent indent);
-
-  /**
-   * Release graphics resources and ask components to release their own
-   * resources.
-   * \pre w_exists: w!=0
-   */
-  void ReleaseGraphicsResources(vtkWindow *w);
-
-  //@{
-  /**
-   * Delegate for rendering the image to be processed.
-   * If it is NULL, nothing will be rendered and a warning will be emitted.
-   * It is usually set to a vtkCameraPass or to a post-processing pass.
-   * Initial value is a NULL pointer.
-   */
-  vtkGetObjectMacro(DelegatePass,vtkRenderPass);
-  virtual void SetDelegatePass(vtkRenderPass *delegatePass);
-  //@}
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
  protected:
   /**
@@ -92,7 +74,7 @@ public:
   /**
    * Destructor.
    */
-  virtual ~vtkDepthImageProcessingPass();
+  ~vtkDepthImageProcessingPass() VTK_OVERRIDE;
 
   /**
    * Render delegate with a image of different dimensions than the
@@ -108,7 +90,7 @@ public:
                       int height,
                       int newWidth,
                       int newHeight,
-                      vtkFrameBufferObject *fbo,
+                      vtkOpenGLFramebufferObject *fbo,
                       vtkTextureObject *colortarget,
                       vtkTextureObject *depthtarget);
 
@@ -119,7 +101,6 @@ public:
    */
   void ReadWindowSize(const vtkRenderState* s);
 
-  vtkRenderPass *DelegatePass;
   int    Width;       // parent window width
   int    Height;      // parent window height
   int    W;           // this width

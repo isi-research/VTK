@@ -17,7 +17,6 @@ set (GenericVolumeCxxTests
   TestGPURayCastFourComponentsMinIP.cxx
   TestGPURayCastFourComponentsMIP.cxx
   TestGPURayCastMapperBenchmark.cxx
-  TestGPURayCastMapperSampleDistance.cxx
   TestGPURayCastMIPBinaryMask.cxx
   TestGPURayCastMIPToComposite.cxx
   TestGPURayCastNearestDataTypesMIP.cxx
@@ -29,6 +28,7 @@ set (GenericVolumeCxxTests
   TestProjectedTetrahedra.cxx
   TestSmartVolumeMapper.cxx
   TestSmartVolumeMapperWindowLevel.cxx
+  TestGPURayCastCompositeBinaryMask1.cxx
   )
 
 # These tests are built for the OpenGL backend
@@ -54,7 +54,9 @@ endif()
 # These tests are only built for the OpenGL2 backend
 set (VolumeOpenGL2CxxTests
   TestGPURayCastAverageIP.cxx
+  TestGPURayCastBlendModes.cxx
   TestGPURayCastCameraInside.cxx
+  TestGPURayCastCameraInsideClipping.cxx
   TestGPURayCastCameraInsideSmallSpacing.cxx
   TestGPURayCastCameraInsideTransformation.cxx
   TestGPURayCastCellData.cxx
@@ -62,19 +64,31 @@ set (VolumeOpenGL2CxxTests
   TestGPURayCastClippingPolyData.cxx
   TestGPURayCastClippingUserTransform.cxx
   TestGPURayCastDependentComponentsLightParameters.cxx
+  TestGPURayCastDepthPeeling.cxx
+  TestGPURayCastDepthPeelingBlendModes.cxx
+  TestGPURayCastDepthPeelingOpaque.cxx
+  TestGPURayCastDepthPeelingTransVol.cxx
+  TestGPURayCastFourComponentsAdditive.cxx
+  TestGPURayCastFourComponentsAverage.cxx
   TestGPURayCastFourComponentsDependentGradient.cxx
   TestGPURayCastGradientOpacity.cxx
   TestGPURayCastGradientOpacityLight.cxx
+  TestGPURayCastImageSampleXY.cxx
   TestGPURayCastIndependentComponentsLightParameters.cxx
   TestGPURayCastIndependentVectorMode.cxx
+  TestGPURayCastJittering.cxx
+  TestGPURayCastJitteringCustom.cxx
   TestGPURayCastLargeColorTransferFunction.cxx
+  TestGPURayCastMapperSampleDistance.cxx
   TestGPURayCastPositionalLights.cxx
   TestGPURayCastReleaseResources.cxx
   TestGPURayCastRenderDepthToImage.cxx
   TestGPURayCastRenderDepthToImage2.cxx
   TestGPURayCastRenderToTexture.cxx
+  TestGPURayCastTextureStreaming.cxx
   TestGPURayCastThreeComponentsAdditive.cxx
   TestGPURayCastThreeComponentsIndependent.cxx
+  TestGPURayCastTransfer2D.cxx
   TestGPURayCastTwoComponentsDependent.cxx
   TestGPURayCastTwoComponentsDependentGradient.cxx
   TestGPURayCastTwoComponentsGradient.cxx
@@ -85,6 +99,7 @@ set (VolumeOpenGL2CxxTests
   TestGPURayCastVolumePolyData.cxx
   TestGPURayCastVolumeRotation.cxx
   TestGPURayCastVolumeScale.cxx
+  TestMultiBlockMapper.cxx
   TestProjectedTetrahedraOffscreen.cxx
   TestProjectedTetrahedraTransform.cxx
   TestRemoveVolumeNonCurrentContext.cxx

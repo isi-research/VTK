@@ -31,6 +31,7 @@
 #include "vtkSmartPointer.h"
 #include "vtkUniformGrid.h"
 #include "vtkXMLDataElement.h"
+#include "vtkXMLDataParser.h"
 #include "vtkXMLImageDataReader.h"
 #include "vtkXMLPolyDataReader.h"
 #include "vtkXMLRectilinearGridReader.h"
@@ -131,6 +132,17 @@ int vtkXMLCompositeDataReader::ReadPrimaryElement(vtkXMLDataElement* ePrimary)
   if (!this->Superclass::ReadPrimaryElement(ePrimary))
   {
     return 0;
+  }
+
+  vtkXMLDataElement* root = this->XMLParser->GetRootElement();
+  int numNested = root->GetNumberOfNestedElements();
+  for (int i = 0; i < numNested; ++i)
+  {
+    vtkXMLDataElement* eNested = root->GetNestedElement(i);
+    if (strcmp(eNested->GetName(), "FieldData") == 0)
+    {
+      this->FieldDataElement = eNested;
+    }
   }
 
   // Simply save the XML tree. We'll iterate over it later.
@@ -248,6 +260,8 @@ void vtkXMLCompositeDataReader::ReadXMLData()
     return;
   }
 
+  this->ReadFieldData();
+
   // Find the path to this file in case the internal files are
   // specified as relative paths.
   std::string filePath = this->FileName;
@@ -353,7 +367,7 @@ vtkDataSet* vtkXMLCompositeDataReader::ReadDataset(vtkXMLDataElement* xmlElem,
 
   // Get the file extension.
   std::string ext = vtksys::SystemTools::GetFilenameLastExtension(fileName);
-  if (ext.size() > 0)
+  if (!ext.empty())
   {
     // remote "." from the extension.
     ext = &(ext.c_str()[1]);

@@ -32,13 +32,11 @@ class vtkOpenGLBufferObject;
 class vtkOpenGLHelper;
 class vtkOpenGLRenderWindow;
 class vtkOpenGLVertexArrayObject;
+class vtkPixelBufferObject;
 class vtkShaderProgram;
 class vtkWindow;
 class vtkGenericOpenGLResourceFreeCallback;
 
-#if GL_ES_VERSION_2_0 != 1 || GL_ES_VERSION_3_0 == 1
-class vtkPixelBufferObject;
-#endif
 
 class VTKRENDERINGOPENGL2_EXPORT vtkTextureObject : public vtkObject
 {
@@ -60,7 +58,7 @@ public:
 
 // ClampToBorder is not supported in ES 2.0
 // Wrap values.
-#if GL_ES_VERSION_2_0 != 1
+#if GL_ES_VERSION_3_0 != 1
   enum
   {
     ClampToEdge=0,
@@ -124,7 +122,7 @@ public:
 
   static vtkTextureObject* New();
   vtkTypeMacro(vtkTextureObject, vtkObject);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   //@{
   /**
@@ -148,12 +146,16 @@ public:
   vtkGetMacro(Width, unsigned int);
   vtkGetMacro(Height, unsigned int);
   vtkGetMacro(Depth, unsigned int);
+  vtkGetMacro(Samples, unsigned int);
   vtkGetMacro(Components, int);
   unsigned int GetTuples()
   { return this->Width*this->Height*this->Depth; }
   //@}
 
   vtkGetMacro(NumberOfDimensions, int);
+
+  //for MSAA textures set the number of samples
+  vtkSetMacro(Samples, unsigned int);
 
   //@{
   /**
@@ -177,7 +179,7 @@ public:
   //@{
   /**
    * Bind UnBind The texture must have been created using Create().
-   * A side affect is that tex paramteres are sent.
+   * A side affect is that tex parameters are sent.
    * RenderWindow must be set before calling this.
    */
   void Bind();
@@ -248,7 +250,7 @@ public:
                          int numComps, int dataType, void *data[6]);
 
 // 1D  textures are not supported in ES 2.0 or 3.0
-#if GL_ES_VERSION_2_0 != 1
+#if GL_ES_VERSION_3_0 != 1
 
   /**
    * Create a 1D texture using the PBO.
@@ -279,9 +281,6 @@ public:
                           void *raw);
 #endif
 
-// PBO's, and 3D textures are not supported in ES 2.0
-#if GL_ES_VERSION_2_0 != 1 || GL_ES_VERSION_3_0 == 1
-
   /**
    * Create a 2D texture using the PBO.
    * Eventually we may start supporting creating a texture from subset of data
@@ -311,6 +310,15 @@ public:
                        int dataType, void *data);
 
   /**
+   * Create a 3D texture using the GL_PROXY_TEXTURE_3D target.  This serves
+   * as a pre-allocation step which assists in verifying that the size
+   * of the texture to be created is supported by the implementation and that
+   * there is sufficient texture memory available for it.
+   */
+  bool AllocateProxyTexture3D(unsigned int const width, unsigned int const height,
+    unsigned int const depth, int const numComps, int const dataType);
+
+  /**
    * This is used to download raw data from the texture into a pixel bufer. The
    * pixel buffer API can then be used to download the pixel buffer data to CPU
    * arrays. The caller takes on the responsibility of deleting the returns
@@ -326,8 +334,6 @@ public:
                    unsigned int height,
                    int internalFormat,
                    vtkPixelBufferObject *pbo);
-
-#endif
 
   /**
    * Create a 2D depth texture but does not initialize its values.
@@ -362,9 +368,11 @@ public:
    * Create texture without uploading any data.
    */
   bool Create2D(unsigned int width, unsigned int height, int numComps,
-                int vtktype, bool shaderSupportsTextureInt);
+                int vtktype, bool ){
+    return this->Allocate2D(width, height, numComps, vtktype); }
   bool Create3D(unsigned int width, unsigned int height, unsigned int depth,
-                int numComps, int vtktype, bool shaderSupportsTextureInt);
+                int numComps, int vtktype, bool ) {
+    return this->Allocate3D(width, height, depth, numComps, vtktype); }
   //@}
 
   /**
@@ -642,16 +650,26 @@ public:
   vtkSetMacro(GenerateMipmap, bool);
   //@}
 
+  //@{
   /**
    * Query and return maximum texture size (dimension) supported by the
    * OpenGL driver for a particular context. It should be noted that this
    * size does not consider the internal format of the texture and therefore
-   * there is no guarentee that a texture of this size will be allocated by
+   * there is no guarantee that a texture of this size will be allocated by
    * the driver. Also, the method does not make the context current so
    * if the passed context is not valid or current, a value of -1 will
    * be returned.
    */
   static int GetMaximumTextureSize(vtkOpenGLRenderWindow* context);
+  static int GetMaximumTextureSize3D(vtkOpenGLRenderWindow* context);
+
+  /**
+   * Overload which uses the internal context to query the maximum 3D
+   * texture size. Will make the internal context current, returns -1 if
+   * anything fails.
+   */
+  int GetMaximumTextureSize3D();
+  //@}
 
   /**
    * Returns if the context supports the required extensions. If flags
@@ -724,7 +742,7 @@ public:
   /**
    * Get the shift and scale required in the shader to
    * return the texture values to their original range.
-   * Thsi is useful when for example you have unsigned char
+   * This is useful when for example you have unsigned char
    * data and it is being accessed using the floating point
    * texture calls. In that case OpenGL maps the uchar
    * range to a different floating point range under the hood.
@@ -735,9 +753,26 @@ public:
    */
   void GetShiftAndScale(float &shift, float &scale);
 
+  // resizes an existing texture, any existing
+  // data values are lost
+  void Resize(unsigned int width, unsigned int height);
+
+  //@{
+  /**
+   * Is this texture using the sRGB color space. If you are using a
+   * sRGB framebuffer or window then you probably also want to be
+   * using sRGB color textures for proper handling of gamma and
+   * associated color mixing.
+   */
+  vtkGetMacro(UseSRGBColorSpace, bool);
+  vtkSetMacro(UseSRGBColorSpace, bool);
+  vtkBooleanMacro(UseSRGBColorSpace, bool);
+  //@}
+
+
 protected:
   vtkTextureObject();
-  ~vtkTextureObject();
+  ~vtkTextureObject() VTK_OVERRIDE;
 
   vtkGenericOpenGLResourceFreeCallback *ResourceCallback;
 
@@ -760,6 +795,8 @@ protected:
   unsigned int Width;
   unsigned int Height;
   unsigned int Depth;
+  unsigned int Samples;
+  bool UseSRGBColorSpace;
 
   unsigned int Target; // GLenum
   unsigned int Format; // GLenum

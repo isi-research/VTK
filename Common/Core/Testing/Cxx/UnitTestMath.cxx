@@ -80,6 +80,7 @@ static int TestJacobiN();
 static int TestClampValue();
 static int TestClampValues();
 static int TestClampAndNormalizeValue();
+static int TestTensorFromSymmetricTensor();
 static int TestGetScalarTypeFittingRange();
 static int TestGetAdjustedScalarRange();
 static int TestExtentIsWithinOtherExtent();
@@ -155,6 +156,7 @@ int UnitTestMath(int,char *[])
   status += TestClampValue();
   status += TestClampValues();
   status += TestClampAndNormalizeValue();
+  status += TestTensorFromSymmetricTensor();
   status += TestGetScalarTypeFittingRange();
   status += TestGetAdjustedScalarRange();
   status += TestExtentIsWithinOtherExtent();
@@ -2486,7 +2488,7 @@ int Diagonalize3x3()
   vtkMath::Identity3x3(mat);
   mat[0][0] = 5.0;
   mat[1][1] = 5.0;
-  mat[1][1] = 1.0;
+  mat[2][2] = 1.0;
 
   vtkMath::Diagonalize3x3(mat, eigen, eigenVector);
   std::cout << "eigen: "
@@ -2497,7 +2499,7 @@ int Diagonalize3x3()
   vtkMath::Identity3x3(mat);
   mat[0][0] = 2.0;
   mat[1][1] = 2.0;
-  mat[1][1] = 2.0;
+  mat[2][2] = 2.0;
 
   vtkMath::Diagonalize3x3(mat, eigen, eigenVector);
   std::cout << "eigen: "
@@ -3268,6 +3270,54 @@ int TestClampAndNormalizeValue()
     ++status;
   }
 
+  if (status)
+  {
+    std::cout << "..FAILED" << std::endl;
+  }
+  else
+  {
+    std::cout << ".PASSED" << std::endl;
+  }
+  return status;
+}
+
+// Validate by checking symmetric tensor values
+// are in correct places
+int TestTensorFromSymmetricTensor()
+{
+  int status = 0;
+  std::cout << "TensorFromSymmetricTensor..";
+  double symmTensor[9];
+  for (int i = 0; i < 6; i++)
+  {
+    symmTensor[i] = vtkMath::Random();
+  }
+  double tensor[9];
+  vtkMath::TensorFromSymmetricTensor(symmTensor, tensor);
+  if (tensor[0] != symmTensor[0] ||
+      tensor[1] != symmTensor[3] ||
+      tensor[2] != symmTensor[5] ||
+      tensor[3] != symmTensor[3] ||
+      tensor[4] != symmTensor[1] ||
+      tensor[5] != symmTensor[4] ||
+      tensor[6] != symmTensor[5] ||
+      tensor[7] != symmTensor[4] ||
+      tensor[8] != symmTensor[2])
+  {
+    std::cout << " Unexpected results from TensorFromSymmetricTensor " << std::endl;
+    ++status;
+  }
+
+  vtkMath::TensorFromSymmetricTensor(symmTensor);
+  for (int i = 0; i < 9; i++)
+  {
+    if (symmTensor[i] !=  tensor[i])
+    {
+      std::cout << " Unexpected results from in place TensorFromSymmetricTensor " << std::endl;
+      ++status;
+      break;
+    }
+  }
   if (status)
   {
     std::cout << "..FAILED" << std::endl;

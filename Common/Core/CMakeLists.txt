@@ -3,6 +3,9 @@ if("${CMAKE_SIZEOF_VOID_P}" GREATER 4)
  set(VTK_USE_64BIT_IDS_DEFAULT ON)
 else()
  set(VTK_USE_64BIT_IDS_DEFAULT OFF)
+ set(VTK_USE_64BIT_TIMESTAMPS_DEFAULT OFF)
+ option(VTK_USE_64BIT_TIMESTAMPS "Build VTK with 64 bit timestamps"
+  ${VTK_USE_64BIT_TIMESTAMPS_DEFAULT})
 endif()
 
 option(VTK_USE_64BIT_IDS "Build VTK with 64 bit ids"
@@ -18,12 +21,13 @@ option(VTK_DEBUG_LEAKS "Build leak checking support into VTK." OFF)
 option(VTK_ALL_NEW_OBJECT_FACTORY
   "Build all vtkObject derived classes with object factory new methods." OFF)
 
-mark_as_advanced(VTK_DEBUG_LEAKS VTK_USE_64BIT_IDS VTK_ALL_NEW_OBJECT_FACTORY)
+mark_as_advanced(VTK_DEBUG_LEAKS VTK_USE_64BIT_IDS VTK_ALL_NEW_OBJECT_FACTORY VTK_USE_64BIT_TIMESTAMPS)
 
 set(vtkCommonCore_EXPORT_OPTIONS
   VTK_DEBUG_LEAKS
   VTK_USE_64BIT_IDS
   VTK_ALL_NEW_OBJECT_FACTORY
+  VTK_USE_64BIT_TIMESTAMPS
   )
 
 # Choose which multi-threaded parallelism library to use
@@ -188,6 +192,7 @@ SET(Module_SRCS
   vtkGarbageCollector.cxx
   vtkGarbageCollectorManager.cxx
   vtkGaussianRandomSequence.cxx
+  vtkGenericDataArray.txx
   vtkIdListCollection.cxx
   vtkIdList.cxx
   vtkIdTypeArray.cxx
@@ -269,6 +274,7 @@ SET(Module_SRCS
   vtkVersion.cxx
   vtkVoidArray.cxx
   vtkWeakPointerBase.cxx
+  vtkWeakReference.cxx
   vtkWindow.cxx
   vtkXMLFileOutputWindow.cxx
   vtkDenseArray.txx
@@ -304,9 +310,7 @@ set(${vtk-module}_HDRS
   vtkDataArrayAccessor.h
   vtkDataArrayIteratorMacro.h
   vtkDataArrayTemplate.h
-  vtkGenericDataArray.h
   vtkGenericDataArrayLookupHelper.h
-  vtkGenericDataArray.txx
   vtkIOStream.h
   vtkIOStreamFwd.h
   vtkInformationInternals.h
@@ -317,7 +321,6 @@ set(${vtk-module}_HDRS
   vtkPeriodicDataArray.h
   vtkSetGet.h
   vtkSmartPointer.h
-  vtkSOADataArrayTemplate.h
   vtkSOADataArrayTemplate.txx
   vtkTemplateAliasMacro.h
   vtkTestDataArray.h
@@ -331,6 +334,7 @@ set(${vtk-module}_HDRS
   vtkVariantExtract.h
   vtkVariantInlineOperators.h
   vtkWeakPointer.h
+  vtkWeakReference.h
   vtkWin32Header.h
   vtkWindows.h
   ${CMAKE_CURRENT_BINARY_DIR}/vtkArrayDispatchArrayList.h
@@ -606,7 +610,6 @@ set_source_files_properties(
   vtkOldStyleCallbackCommand.cxx
   vtkSimpleCriticalSection.cxx
   vtkSmartPointerBase.cxx
-  vtkSOADataArrayTemplate.h
   vtkSOADataArrayTemplate.txx
   vtkSOADataArrayTemplateInstantiate.cxx # Has no API
   vtkStdString.cxx
@@ -629,6 +632,7 @@ set_source_files_properties(
   vtkAtomicTypes.h
   vtkAutoInit.h
   vtkDenseArray.txx
+  vtkGenericDataArray.txx
   vtkGenericDataArrayHelpers.h
   vtkInformationInternals.h
   vtkIOStream.h
@@ -684,7 +688,6 @@ set_source_files_properties(
   vtkSetGet.h
   vtkSmartPointer.h
   vtkSmartPointerBase.h
-  vtkSOADataArrayTemplate.txx
   vtkSOADataArrayTemplateInstantiate.cxx # Has no API
   vtkStdString.cxx
   vtkUnicodeString.cxx

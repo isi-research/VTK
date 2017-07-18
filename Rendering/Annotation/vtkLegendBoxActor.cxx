@@ -369,7 +369,6 @@ void vtkLegendBoxActor::SetNumberOfEntries(int num)
   }
 
   this->Modified();
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -382,8 +381,6 @@ void vtkLegendBoxActor::SetEntry(int i, vtkPolyData *symbol, const char* string,
     this->SetEntryString(i,string);
     this->SetEntryColor(i,color);
   }
-
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -395,8 +392,6 @@ void vtkLegendBoxActor::SetEntry(int i, vtkImageData *icon, const char* string, 
     this->SetEntryString(i,string);
     this->SetEntryColor(i,color);
   }
-
-  return;
 }
 
 
@@ -409,8 +404,6 @@ void vtkLegendBoxActor::SetEntry(int i, vtkPolyData *symbol, vtkImageData *icon,
     this->SetEntry(i, symbol, string, color);
     this->SetEntryIcon(i, icon);
   }
-
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -651,7 +644,7 @@ int vtkLegendBoxActor::RenderOpaqueGeometry(vtkViewport *viewport)
 
     // If text prop has changed, recopy it to all mappers
     // We have to use shallow copy since the color of each text prop
-    // can be overriden
+    // can be overridden
 
     if (this->EntryTextProperty->GetMTime()  > this->BuildTime)
     {
@@ -677,7 +670,7 @@ int vtkLegendBoxActor::RenderOpaqueGeometry(vtkViewport *viewport)
     int maxTextMapper = 0;
     int tempi[2], fontSize;
     double sf, twr, swr;
-    double *bounds;
+    const double *bounds;
     bool iconExists   (false);
     bool symbolExists (false);
 

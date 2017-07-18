@@ -22,7 +22,6 @@
 
 #include "vtksys/SystemTools.hxx"
 
-#include <sys/stat.h>
 #include <string>
 #include <algorithm>
 
@@ -191,8 +190,8 @@ static void vtkTIFFReaderInternalErrorHandler(const char* vtkNotUsed(module),
 bool vtkTIFFReader::vtkTIFFReaderInternal::Open(const char *filename)
 {
   this->Clean();
-  struct stat fs;
-  if (stat(filename, &fs))
+  vtksys::SystemTools::Stat_t fs;
+  if (vtksys::SystemTools::Stat(filename, &fs))
   {
     return false;
   }
@@ -285,7 +284,7 @@ bool vtkTIFFReader::vtkTIFFReaderInternal::Initialize()
           // look for the number of images
           std::string desc = description[0];
           std::string::size_type pos = desc.find("images=");
-          std::string::size_type pos2 = desc.find("\n");
+          std::string::size_type pos2 = desc.find('\n');
           if ( (pos != std::string::npos) && (pos2 != std::string::npos) )
           {
             this->NumberOfPages = atoi(desc.substr(pos+7,pos2-pos-7).c_str());
@@ -488,6 +487,9 @@ void vtkTIFFReader::ExecuteInformation()
         this->DataSpacing[0] = 10.0 / this->InternalImage->XResolution;
         this->DataSpacing[1] = 10.0 / this->InternalImage->YResolution;
       }
+    // Somewhat arbitrary choice of using the X spacing as also the
+    // Z spacing. Used only with image stacks.
+    this->DataSpacing[2] = this->DataSpacing[0];
     }
   }
 
@@ -495,6 +497,7 @@ void vtkTIFFReader::ExecuteInformation()
   {
     this->DataOrigin[0] = 0.0;
     this->DataOrigin[1] = 0.0;
+    this->DataOrigin[2] = 0.0;
   }
 
   // Pull out the width/height, etc.
@@ -570,15 +573,6 @@ void vtkTIFFReader::ExecuteInformation()
     {
       this->DataExtent[4] = 0;
       this->DataExtent[5] = this->InternalImage->NumberOfPages - 1;
-    }
-
-    if (!SpacingSpecifiedFlag)
-    {
-      this->DataSpacing[2] = this->DataSpacing[0];
-    }
-    if (!OriginSpecifiedFlag)
-    {
-      this->DataOrigin[2]  = 0.0;
     }
   }
 

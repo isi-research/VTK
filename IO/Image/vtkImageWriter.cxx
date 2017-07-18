@@ -35,6 +35,7 @@ vtkImageWriter::vtkImageWriter()
   this->FilePattern = NULL;
   this->FileName = NULL;
   this->InternalFileName = NULL;
+  this->InternalFileNameSize = 0;
   this->FileNumber = 0;
   this->FileDimensionality = 2;
 
@@ -42,6 +43,8 @@ vtkImageWriter::vtkImageWriter()
   strcpy(this->FilePattern, "%s.%d");
 
   this->FileLowerLeft = 0;
+
+  this->WriteToMemory = 0;
 
   this->MinimumFileNumber = this->MaximumFileNumber = 0;
   this->FilesDeleted = 0;
@@ -76,6 +79,7 @@ void vtkImageWriter::PrintSelf(ostream& os, vtkIndent indent)
     (this->FilePattern ? this->FilePattern : "(none)") << "\n";
 
   os << indent << "FileDimensionality: " << this->FileDimensionality << "\n";
+  os << indent << "WriteToMemory: " << this->WriteToMemory << "\n";
 }
 
 
@@ -116,10 +120,10 @@ int vtkImageWriter::RequestData(
   }
 
   // Make sure the file name is allocated
-  this->InternalFileName =
-    new char[(this->FileName ? strlen(this->FileName) : 1) +
-            (this->FilePrefix ? strlen(this->FilePrefix) : 1) +
-            (this->FilePattern ? strlen(this->FilePattern) : 1) + 10];
+  this->InternalFileNameSize = (this->FileName ? strlen(this->FileName) : 1) +
+                               (this->FilePrefix ? strlen(this->FilePrefix) : 1) +
+                               (this->FilePattern ? strlen(this->FilePattern) : 1) + 10;
+  this->InternalFileName = new char[this->InternalFileNameSize];
 
   // Fill in image information.
   int *wExt = inInfo->Get(vtkStreamingDemandDrivenPipeline::WHOLE_EXTENT());
@@ -130,7 +134,10 @@ int vtkImageWriter::RequestData(
   // Write
   this->InvokeEvent(vtkCommand::StartEvent);
   this->UpdateProgress(0.0);
-  this->RecursiveWrite(2, input, inInfo, NULL);
+  if (!this->WriteToMemory)
+  {
+    this->RecursiveWrite(2, input, inInfo, NULL);
+  }
 
   if (this->ErrorCode == vtkErrorCode::OutOfDiskSpaceError)
   {
@@ -142,6 +149,7 @@ int vtkImageWriter::RequestData(
 
   delete [] this->InternalFileName;
   this->InternalFileName = NULL;
+  this->InternalFileNameSize = 0;
 
   return 1;
 }
@@ -171,18 +179,27 @@ void vtkImageWriter::RecursiveWrite(int axis,
     // determine the name
     if (this->FileName)
     {
-      sprintf(this->InternalFileName,"%s",this->FileName);
+      snprintf(this->InternalFileName,
+               this->InternalFileNameSize,
+               "%s",
+               this->FileName);
     }
     else
     {
       if (this->FilePrefix)
       {
-        sprintf(this->InternalFileName, this->FilePattern,
-                this->FilePrefix, this->FileNumber);
+        snprintf(this->InternalFileName,
+                 this->InternalFileNameSize,
+                 this->FilePattern,
+                 this->FilePrefix,
+                 this->FileNumber);
       }
       else
       {
-        sprintf(this->InternalFileName, this->FilePattern,this->FileNumber);
+        snprintf(this->InternalFileName,
+                 this->InternalFileNameSize,
+                 this->FilePattern,
+                 this->FileNumber);
       }
       if (this->FileNumber < this->MinimumFileNumber)
       {
@@ -256,7 +273,6 @@ void vtkImageWriter::RecursiveWrite(int axis,
     file->close();
     delete file;
   }
-  return;
 }
 
 
@@ -293,18 +309,27 @@ void vtkImageWriter::RecursiveWrite(int axis,
     // determine the name
     if (this->FileName)
     {
-      sprintf(this->InternalFileName,"%s",this->FileName);
+      snprintf(this->InternalFileName,
+               this->InternalFileNameSize,
+               "%s",
+               this->FileName);
     }
     else
     {
       if (this->FilePrefix)
       {
-        sprintf(this->InternalFileName, this->FilePattern,
-                this->FilePrefix, this->FileNumber);
+        snprintf(this->InternalFileName,
+                 this->InternalFileNameSize,
+                 this->FilePattern,
+                 this->FilePrefix,
+                 this->FileNumber);
       }
       else
       {
-        sprintf(this->InternalFileName, this->FilePattern,this->FileNumber);
+        snprintf(this->InternalFileName,
+                 this->InternalFileNameSize,
+                 this->FilePattern,
+                 this->FileNumber);
       }
       if (this->FileNumber < this->MinimumFileNumber)
       {
@@ -498,8 +523,6 @@ void vtkImageWriter::DeleteFiles()
   {
     return;
   }
-  int i;
-  char *fileName;
 
   vtkErrorMacro("Ran out of disk space; deleting file(s) already written");
 
@@ -511,23 +534,24 @@ void vtkImageWriter::DeleteFiles()
   {
     if (this->FilePrefix)
     {
-      fileName =
-        new char[strlen(this->FilePrefix) + strlen(this->FilePattern) + 10];
+      size_t fileNameLength = strlen(this->FilePrefix) + strlen(this->FilePattern) + 10;
+      char *fileName = new char[fileNameLength];
 
-      for (i = this->MinimumFileNumber; i <= this->MaximumFileNumber; i++)
+      for (int i = this->MinimumFileNumber; i <= this->MaximumFileNumber; i++)
       {
-        sprintf(fileName, this->FilePattern, this->FilePrefix, i);
+        snprintf(fileName, fileNameLength, this->FilePattern, this->FilePrefix, i);
         vtksys::SystemTools::RemoveFile(fileName);
       }
       delete [] fileName;
     }
     else
     {
-      fileName = new char[strlen(this->FilePattern) + 10];
+      size_t fileNameLength = strlen(this->FilePattern) + 10;
+      char *fileName = new char[fileNameLength];
 
-      for (i = this->MinimumFileNumber; i <= this->MaximumFileNumber; i++)
+      for (int i = this->MinimumFileNumber; i <= this->MaximumFileNumber; i++)
       {
-        sprintf(fileName, this->FilePattern, i);
+        snprintf(fileName, fileNameLength, this->FilePattern, i);
         vtksys::SystemTools::RemoveFile(fileName);
       }
       delete [] fileName;

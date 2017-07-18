@@ -67,10 +67,7 @@ void vtkPTSReader::SetFileName(const char *filename)
   {
     return;
   }
-  if (this->FileName)
-  {
-    delete [] this->FileName;
-  }
+  delete [] this->FileName;
   if (filename)
   {
     size_t n = strlen(filename) + 1;
@@ -177,7 +174,7 @@ RequestData(vtkInformation *vtkNotUsed(request),
   for (numPts = -1; !file.eof();)
   {
     getline(file, buffer);
-    // Scanf should match the interger part but not the string
+    // Scanf should match the integer part but not the string
     int numArgs = sscanf(buffer.c_str(), "%d%s", &tempNumPts, junk);
     if (numArgs == 1)
     {

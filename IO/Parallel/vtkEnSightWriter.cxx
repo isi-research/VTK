@@ -60,7 +60,7 @@
 
 #include "vtkUnstructuredGrid.h"
 
-#include <errno.h>
+#include <cerrno>
 #include <cmath>
 #include <cctype>
 
@@ -233,7 +233,7 @@ void vtkEnSightWriter::WriteData()
   int * elementIDs=NULL;
   char charBuffer[512];
   char fileBuffer[512];
-  sprintf(charBuffer,"%s/%s.%d.%05d.geo",
+  snprintf(charBuffer,sizeof(charBuffer),"%s/%s.%d.%05d.geo",
     this->Path,this->BaseName,this->ProcessNumber,
     this->TimeStep);
 
@@ -253,7 +253,7 @@ void vtkEnSightWriter::WriteData()
   {
     strcpy(fileBuffer,input->GetPointData()->GetArray(i)->GetName());
     this->SanitizeFileName(fileBuffer);
-    sprintf(charBuffer,"%s/%s.%d.%05d_n.%s",this->Path,this->BaseName,this->ProcessNumber,
+    snprintf(charBuffer,sizeof(charBuffer),"%s/%s.%d.%05d_n.%s",this->Path,this->BaseName,this->ProcessNumber,
       this->TimeStep,fileBuffer);
     FILE* ftemp=OpenFile(charBuffer);
     if (!ftemp)
@@ -275,7 +275,7 @@ void vtkEnSightWriter::WriteData()
 
     strcpy(fileBuffer,input->GetCellData()->GetArray(i)->GetName());
     this->SanitizeFileName(fileBuffer);
-    sprintf(charBuffer,"%s/%s.%d.%05d_c.%s",this->Path,this->BaseName,this->ProcessNumber,
+    snprintf(charBuffer,sizeof(charBuffer),"%s/%s.%d.%05d_c.%s",this->Path,this->BaseName,this->ProcessNumber,
       this->TimeStep,fileBuffer);
     FILE* ftemp=OpenFile(charBuffer);
     if (!ftemp)
@@ -342,7 +342,7 @@ void vtkEnSightWriter::WriteData()
   partNumbers.unique();
 
   //write out each part
-  for (iter=partNumbers.begin();iter!=partNumbers.end();iter++)
+  for (iter=partNumbers.begin();iter!=partNumbers.end();++iter)
   {
     unsigned int j;
     std::list<int>::iterator iter2;
@@ -402,7 +402,7 @@ void vtkEnSightWriter::WriteData()
       //write the Node ID's to the file
       //also set up the NodeID->order map
       int NodeCount=0;
-      for (iter2=NodesPerPart.begin();iter2!=NodesPerPart.end();iter2++)
+      for (iter2=NodesPerPart.begin();iter2!=NodesPerPart.end();++iter2)
       {
         this->WriteIntToFile(*iter2,fd);
         NodeIdToOrder[*iter2]=NodeCount+1;
@@ -414,15 +414,15 @@ void vtkEnSightWriter::WriteData()
       //write the X Coordinates
 
       vtkPoints* inputPoints=input->GetPoints();
-      for (iter2=NodesPerPart.begin();iter2!=NodesPerPart.end();iter2++)
+      for (iter2=NodesPerPart.begin();iter2!=NodesPerPart.end();++iter2)
       {
         this->WriteFloatToFile((float)(inputPoints->GetPoint(*iter2)[0]),fd);
       }
-      for (iter2=NodesPerPart.begin();iter2!=NodesPerPart.end();iter2++)
+      for (iter2=NodesPerPart.begin();iter2!=NodesPerPart.end();++iter2)
       {
         this->WriteFloatToFile((float)(inputPoints->GetPoint(*iter2)[1]),fd);
       }
-      for (iter2=NodesPerPart.begin();iter2!=NodesPerPart.end();iter2++)
+      for (iter2=NodesPerPart.begin();iter2!=NodesPerPart.end();++iter2)
       {
         this->WriteFloatToFile((float)(inputPoints->GetPoint(*iter2)[2]),fd);
       }
@@ -441,7 +441,7 @@ void vtkEnSightWriter::WriteData()
         CurrentDimension++)
       {
         for (std::list<int>::iterator k=NodesPerPart.begin();
-          k!=NodesPerPart.end();k++)
+          k!=NodesPerPart.end();++k)
         {
           this->WriteFloatToFile((float)
             (DataArray->
@@ -566,7 +566,7 @@ void vtkEnSightWriter::WriteData()
 
       for (unsigned int k=0;k<elementTypes.size();k++)
       {
-        if (CellsByElement[elementTypes[k]].size()>0)
+        if (!CellsByElement[elementTypes[k]].empty())
         {
           this->WriteElementTypeToFile(elementTypes[k],
             cellArrayFiles[j]);
@@ -623,7 +623,7 @@ void vtkEnSightWriter::WriteData()
 
           if (exodusIndex!=-1 && blockNames)
           {
-            sprintf(charBuffer,"Exodus-%s-%d",blockNames[exodusIndex],part);
+            snprintf(charBuffer,sizeof(charBuffer),"Exodus-%s-%d",blockNames[exodusIndex],part);
             this->WriteStringToFile(charBuffer,fd);
           }
           else
@@ -686,7 +686,7 @@ void vtkEnSightWriter::WriteCaseFile(int TotalTimeSteps)
   }
 
   char charBuffer[512];
-  sprintf(charBuffer,"%s/%s.%d.case",this->Path,this->BaseName,this->ProcessNumber);
+  snprintf(charBuffer,sizeof(charBuffer),"%s/%s.%d.case",this->Path,this->BaseName,this->ProcessNumber);
 
   //open the geometry file
   FILE *fd=NULL;
@@ -702,12 +702,12 @@ void vtkEnSightWriter::WriteCaseFile(int TotalTimeSteps)
   //write the geometry file
   if (!this->TransientGeometry)
   {
-    sprintf(charBuffer,"model: %s.%d.00000.geo\n",this->BaseName,this->ProcessNumber);
+    snprintf(charBuffer,sizeof(charBuffer),"model: %s.%d.00000.geo\n",this->BaseName,this->ProcessNumber);
     this->WriteTerminatedStringToFile(charBuffer,fd);
   }
   else
   {
-    sprintf(charBuffer,"model: 1 %s.%d.*****.geo\n",this->BaseName,this->ProcessNumber);
+    snprintf(charBuffer,sizeof(charBuffer),"model: 1 %s.%d.*****.geo\n",this->BaseName,this->ProcessNumber);
     this->WriteTerminatedStringToFile(charBuffer,fd);
   }
 
@@ -753,7 +753,7 @@ void vtkEnSightWriter::WriteCaseFile(int TotalTimeSteps)
     }
     if (TotalTimeSteps<=1)
     {
-      sprintf(charBuffer,"%s per node: %s_n %s.%d.00000_n.%s\n",
+      snprintf(charBuffer,sizeof(charBuffer),"%s per node: %s_n %s.%d.00000_n.%s\n",
         SmallBuffer,
         fileBuffer,
         this->BaseName,
@@ -762,7 +762,7 @@ void vtkEnSightWriter::WriteCaseFile(int TotalTimeSteps)
     }
     else
     {
-      sprintf(charBuffer,"%s per node: 1 %s_n %s.%d.*****_n.%s\n",
+      snprintf(charBuffer,sizeof(charBuffer),"%s per node: 1 %s_n %s.%d.*****_n.%s\n",
         SmallBuffer,
         fileBuffer,
         this->BaseName,
@@ -812,7 +812,7 @@ void vtkEnSightWriter::WriteCaseFile(int TotalTimeSteps)
     }
     if (TotalTimeSteps<=1)
     {
-      sprintf(charBuffer,"%s per element: %s_c %s.%d.00000_c.%s\n",
+      snprintf(charBuffer,sizeof(charBuffer),"%s per element: %s_c %s.%d.00000_c.%s\n",
         SmallBuffer,
         fileBuffer,
         this->BaseName,
@@ -821,7 +821,7 @@ void vtkEnSightWriter::WriteCaseFile(int TotalTimeSteps)
     }
     else
     {
-      sprintf(charBuffer,"%s per element: 1 %s_c %s.%d.*****_c.%s\n",
+      snprintf(charBuffer,sizeof(charBuffer),"%s per element: 1 %s_c %s.%d.*****_c.%s\n",
         SmallBuffer,
         fileBuffer,
         this->BaseName,
@@ -836,7 +836,7 @@ void vtkEnSightWriter::WriteCaseFile(int TotalTimeSteps)
   {
     this->WriteTerminatedStringToFile("\nTIME\n",fd);
     this->WriteTerminatedStringToFile("time set: 1\n",fd);
-    sprintf(charBuffer,"number of steps: %d\n",TotalTimeSteps);
+    snprintf(charBuffer,sizeof(charBuffer),"number of steps: %d\n",TotalTimeSteps);
     this->WriteTerminatedStringToFile(charBuffer,fd);
     this->WriteTerminatedStringToFile("filename start number: 00000\n",fd);
     this->WriteTerminatedStringToFile("filename increment: 00001\n",fd);
@@ -845,7 +845,7 @@ void vtkEnSightWriter::WriteCaseFile(int TotalTimeSteps)
     {
       double timestep=i;
 
-      sprintf(charBuffer,"%f ",timestep);
+      snprintf(charBuffer,sizeof(charBuffer),"%f ",timestep);
       this->WriteTerminatedStringToFile(charBuffer,fd);
       if (i%6==0 && i>0)
       {
@@ -871,7 +871,7 @@ void vtkEnSightWriter::WriteSOSCaseFile(int numProcs)
   this->SanitizeFileName(this->BaseName);
 
   char charBuffer[512];
-  sprintf(charBuffer,"%s/%s.case.sos",this->Path,this->BaseName);
+  snprintf(charBuffer,sizeof(charBuffer),"%s/%s.case.sos",this->Path,this->BaseName);
 
   FILE *fd=NULL;
   if (!(fd=OpenFile(charBuffer)))
@@ -881,7 +881,7 @@ void vtkEnSightWriter::WriteSOSCaseFile(int numProcs)
   this->WriteTerminatedStringToFile("type: master_server gold\n\n",fd);
 
   this->WriteTerminatedStringToFile("SERVERS\n",fd);
-  sprintf(charBuffer,"number of servers: %d\n\n",numProcs);
+  snprintf(charBuffer,sizeof(charBuffer),"number of servers: %d\n\n",numProcs);
   this->WriteTerminatedStringToFile(charBuffer,fd);
 
   //write the servers section with placeholders for the ensight server
@@ -889,16 +889,16 @@ void vtkEnSightWriter::WriteSOSCaseFile(int numProcs)
   int i=0;
   for (i=0;i<numProcs;i++)
   {
-    sprintf(charBuffer, "#Server %d\n",i);
+    snprintf(charBuffer,sizeof(charBuffer), "#Server %d\n",i);
     this->WriteTerminatedStringToFile(charBuffer,fd);
     this->WriteTerminatedStringToFile("#-------\n",fd);
-    sprintf(charBuffer, "machine id: MID%05d\n",i);
+    snprintf(charBuffer,sizeof(charBuffer), "machine id: MID%05d\n",i);
     this->WriteTerminatedStringToFile(charBuffer,fd);
 
     this->WriteTerminatedStringToFile("executable: MEX\n",fd);
-    sprintf(charBuffer, "data_path: %s\n",this->Path);
+    snprintf(charBuffer,sizeof(charBuffer), "data_path: %s\n",this->Path);
     this->WriteTerminatedStringToFile(charBuffer,fd);
-    sprintf(charBuffer,"casefile: %s.%d.case\n\n",this->BaseName,i);
+    snprintf(charBuffer,sizeof(charBuffer),"casefile: %s.%d.case\n\n",this->BaseName,i);
     this->WriteTerminatedStringToFile(charBuffer,fd);
   }
 
@@ -926,16 +926,12 @@ void vtkEnSightWriter::WriteTerminatedStringToFile(const char* cstring, FILE* fi
 //----------------------------------------------------------------------------
 void vtkEnSightWriter::WriteIntToFile(const int i,FILE* file)
 {
-  //char cbuffer[80];
-  //sprintf(cbuffer,"%d",i);
   fwrite(&i, sizeof(int),1,file);
 }
 
 //----------------------------------------------------------------------------
 void vtkEnSightWriter::WriteFloatToFile(const float f,FILE* file)
 {
-  //char cbuffer[80];
-  //sprintf(cbuffer,"%d",i);
   fwrite(&f, sizeof(float),1,file);
 }
 

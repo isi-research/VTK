@@ -22,6 +22,7 @@
 #include "vtkCallbackCommand.h"
 #include "vtkRenderer.h"
 
+#include <cassert>
 #include <cmath>
 
 //----------------------------------------------------------------------------
@@ -30,6 +31,7 @@ vtkAbstractObjectFactoryNewMacro(vtkCamera)
 
 vtkCxxSetObjectMacro(vtkCamera, EyeTransformMatrix, vtkMatrix4x4);
 vtkCxxSetObjectMacro(vtkCamera, ModelTransformMatrix, vtkMatrix4x4);
+vtkCxxSetObjectMacro(vtkCamera, ExplicitProjectionTransformMatrix, vtkMatrix4x4)
 
 //-----------------------------------------------------------------------------
 class vtkCameraCallbackCommand : public vtkCommand
@@ -128,6 +130,8 @@ vtkCamera::vtkCamera()
   this->ProjectionTransform = vtkPerspectiveTransform::New();
   this->CameraLightTransform = vtkTransform::New();
   this->ModelViewTransform = vtkTransform::New();
+  this->ExplicitProjectionTransformMatrix = NULL;
+  this->UseExplicitProjectionTransformMatrix = false;
   this->UserTransform = NULL;
   this->UserViewTransform = NULL;
   this->UserViewTransformCallbackCommand = NULL;
@@ -158,6 +162,11 @@ vtkCamera::~vtkCamera()
   this->ProjectionTransform->Delete();
   this->CameraLightTransform->Delete();
   this->ModelViewTransform->Delete();
+  if (this->ExplicitProjectionTransformMatrix)
+  {
+    this->ExplicitProjectionTransformMatrix->UnRegister(this);
+    this->ExplicitProjectionTransformMatrix = NULL;
+  }
   if (this->UserTransform)
   {
     this->UserTransform->UnRegister(this);
@@ -684,7 +693,7 @@ void vtkCamera::Yaw(double angle)
 // and the negative of the , centered at the camera's position.
 void vtkCamera::Pitch(double angle)
 {
-  double axis[3], newFocalPoint[3];
+  double axis[3], newFocalPoint[3], savedViewUp[3];
   double *pos = this->Position;
   this->Transform->Identity();
 
@@ -692,6 +701,13 @@ void vtkCamera::Pitch(double angle)
   axis[0] = this->ViewTransform->GetMatrix()->GetElement(0,0);
   axis[1] = this->ViewTransform->GetMatrix()->GetElement(0,1);
   axis[2] = this->ViewTransform->GetMatrix()->GetElement(0,2);
+
+  // temporarily set the view up with the transformation applied
+  // to avoid bad cross product computations during SetFocalPoint call
+  this->GetViewUp(savedViewUp);
+  this->Transform->RotateWXYZ(angle, axis);
+  this->Transform->TransformPoint(this->ViewUp, this->ViewUp);
+  this->Transform->Identity();
 
   // translate the camera to the origin,
   // rotate about axis,
@@ -703,6 +719,11 @@ void vtkCamera::Pitch(double angle)
   // now transform focal point
   this->Transform->TransformPoint(this->FocalPoint,newFocalPoint);
   this->SetFocalPoint(newFocalPoint);
+
+  // restore the previous ViewUp vector
+  this->ViewUp[0] = savedViewUp[0];
+  this->ViewUp[1] = savedViewUp[1];
+  this->ViewUp[2] = savedViewUp[2];
 }
 
 //----------------------------------------------------------------------------
@@ -730,7 +751,7 @@ void vtkCamera::Azimuth(double angle)
 // direction of projection and the view up vector centered on the focal point.
 void vtkCamera::Elevation(double angle)
 {
-  double axis[3], newPosition[3];
+  double axis[3], newPosition[3], savedViewUp[3];
   double *fp = this->FocalPoint;
   this->Transform->Identity();
 
@@ -739,7 +760,14 @@ void vtkCamera::Elevation(double angle)
   axis[1] = -this->ViewTransform->GetMatrix()->GetElement(0,1);
   axis[2] = -this->ViewTransform->GetMatrix()->GetElement(0,2);
 
-  // translate the focal point to the origin,
+  // temporarily set the view up with the transformation applied
+  // to avoid bad cross product computations during SetPosition call
+  this->GetViewUp(savedViewUp);
+  this->Transform->RotateWXYZ(angle, axis);
+  this->Transform->TransformPoint(this->ViewUp, this->ViewUp);
+  this->Transform->Identity();
+
+    // translate the focal point to the origin,
   // rotate about axis,
   // translate back again
   this->Transform->Translate(+fp[0],+fp[1],+fp[2]);
@@ -749,6 +777,11 @@ void vtkCamera::Elevation(double angle)
   // now transform position
   this->Transform->TransformPoint(this->Position,newPosition);
   this->SetPosition(newPosition);
+
+  // restore the previous ViewUp vector
+  this->ViewUp[0] = savedViewUp[0];
+  this->ViewUp[1] = savedViewUp[1];
+  this->ViewUp[2] = savedViewUp[2];
 }
 
 //----------------------------------------------------------------------------
@@ -997,6 +1030,14 @@ void vtkCamera::ComputeProjectionTransform(double aspect,
   if ( this->UserTransform )
   {
     this->ProjectionTransform->Concatenate( this->UserTransform->GetMatrix() );
+  }
+
+  if (this->UseExplicitProjectionTransformMatrix)
+  {
+    assert(this->ExplicitProjectionTransformMatrix != NULL);
+    this->ProjectionTransform->Concatenate(
+          this->ExplicitProjectionTransformMatrix);
+    return;
   }
 
   // adjust Z-buffer range

@@ -656,8 +656,8 @@ static Py_ssize_t PyVTKMutableObject_GetReadBuf(
       op, segment, ptrptr);
   }
 
-  sprintf(text, "type \'%.20s\' does not support readable buffer access",
-          Py_TYPE(op)->tp_name);
+  snprintf(text, sizeof(text), "type \'%.20s\' does not support readable buffer access",
+           Py_TYPE(op)->tp_name);
   PyErr_SetString(PyExc_TypeError, text);
 
   return -1;
@@ -677,8 +677,8 @@ static Py_ssize_t PyVTKMutableObject_GetWriteBuf(
       op, segment, ptrptr);
   }
 
-  sprintf(text, "type \'%.20s\' does not support writeable buffer access",
-          Py_TYPE(op)->tp_name);
+  snprintf(text, sizeof(text), "type \'%.20s\' does not support writeable buffer access",
+           Py_TYPE(op)->tp_name);
   PyErr_SetString(PyExc_TypeError, text);
 
   return -1;
@@ -697,8 +697,8 @@ PyVTKMutableObject_GetSegCount(PyObject *op, Py_ssize_t *lenp)
     return Py_TYPE(op)->tp_as_buffer->bf_getsegcount(op, lenp);
   }
 
-  sprintf(text, "type \'%.20s\' does not support buffer access",
-          Py_TYPE(op)->tp_name);
+  snprintf(text, sizeof(text), "type \'%.20s\' does not support buffer access",
+           Py_TYPE(op)->tp_name);
   PyErr_SetString(PyExc_TypeError, text);
 
   return -1;
@@ -718,8 +718,8 @@ static Py_ssize_t PyVTKMutableObject_GetCharBuf(
       op, segment, ptrptr);
   }
 
-  sprintf(text, "type \'%.20s\' does not support character buffer access",
-          Py_TYPE(op)->tp_name);
+  snprintf(text, sizeof(text), "type \'%.20s\' does not support character buffer access",
+           Py_TYPE(op)->tp_name);
   PyErr_SetString(PyExc_TypeError, text);
 
   return -1;
@@ -774,14 +774,21 @@ static PyObject *PyVTKMutableObject_Repr(PyObject *ob)
 #ifdef VTK_PY3K
     r = PyUnicode_FromFormat("%s(%U)", name, s);
 #else
-    char textspace[128];
     const char *text = PyString_AsString(s);
-    size_t n = strlen(name) + strlen(text) + 3;
-    char *cp = textspace;
-    if (n > 128) { cp = (char *)malloc(n); }
-    sprintf(cp, "%s(%s)", name, text);
-    r = PyString_FromString(cp);
-    if (n > 128) { free(cp); }
+    size_t n = strlen(name) + strlen(text) + 3; // for '(', ')', null
+    if (n > 128)
+    {
+      char *cp = (char *)malloc(n);
+      snprintf(cp, n, "%s(%s)", name, text);
+      r = PyString_FromString(cp);
+      free(cp);
+    }
+    else
+    {
+      char textspace[128];
+      snprintf(textspace, sizeof(textspace), "%s(%s)", name, text);
+      r = PyString_FromString(textspace);
+    }
 #endif
     Py_DECREF(s);
   }

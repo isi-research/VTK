@@ -71,13 +71,19 @@ int vtkWrap_IsPODPointer(ValueInfo *val)
 {
   unsigned int t = (val->Type & VTK_PARSE_BASE_TYPE);
   return (t != VTK_PARSE_CHAR && vtkWrap_IsNumeric(val) &&
-          vtkWrap_IsPointer(val));
+          vtkWrap_IsPointer(val) && (val->Type & VTK_PARSE_ZEROCOPY) == 0);
+}
+
+int vtkWrap_IsZeroCopyPointer(ValueInfo *val)
+{
+  return (vtkWrap_IsPointer(val) && (val->Type & VTK_PARSE_ZEROCOPY) != 0);
 }
 
 int vtkWrap_IsVTKObject(ValueInfo *val)
 {
   unsigned int t = (val->Type & VTK_PARSE_UNQUALIFIED_TYPE);
   return (t == VTK_PARSE_OBJECT_PTR &&
+          !val->IsEnum &&
           val->Class[0] == 'v' && strncmp(val->Class, "vtk", 3) == 0);
 }
 
@@ -86,6 +92,7 @@ int vtkWrap_IsSpecialObject(ValueInfo *val)
   unsigned int t = (val->Type & VTK_PARSE_UNQUALIFIED_TYPE);
   return ((t == VTK_PARSE_OBJECT ||
            t == VTK_PARSE_OBJECT_REF) &&
+          !val->IsEnum &&
           val->Class[0] == 'v' && strncmp(val->Class, "vtk", 3) == 0);
 }
 
@@ -832,11 +839,37 @@ void vtkWrap_ExpandTypedefs(
       {
         vtkParseHierarchy_ExpandTypedefsInValue(
           hinfo, funcInfo->Parameters[j], finfo->Strings, data->Name);
+#ifndef VTK_PARSE_LEGACY_REMOVE
+        if (j < MAX_ARGS)
+        {
+          if (vtkWrap_IsFunction(funcInfo->Parameters[j]))
+          {
+            // legacy args only allow "void func(void *)" functions
+            if (vtkWrap_IsVoidFunction(funcInfo->Parameters[j]))
+            {
+              funcInfo->ArgTypes[j] = VTK_PARSE_FUNCTION;
+              funcInfo->ArgClasses[j] = funcInfo->Parameters[j]->Class;
+            }
+          }
+          else
+          {
+            funcInfo->ArgTypes[j] = funcInfo->Parameters[j]->Type;
+            funcInfo->ArgClasses[j] = funcInfo->Parameters[j]->Class;
+          }
+        }
+#endif
       }
       if (funcInfo->ReturnValue)
       {
         vtkParseHierarchy_ExpandTypedefsInValue(
           hinfo, funcInfo->ReturnValue, finfo->Strings, data->Name);
+#ifndef VTK_PARSE_LEGACY_REMOVE
+        if (!vtkWrap_IsFunction(funcInfo->ReturnValue))
+        {
+          funcInfo->ReturnType = funcInfo->ReturnValue->Type;
+          funcInfo->ReturnClass = funcInfo->ReturnValue->Class;
+        }
+#endif
       }
     }
   }
@@ -998,15 +1031,17 @@ void vtkWrap_DeclareVariable(
      * other refs are passed by value */
     if (aType == VTK_PARSE_CHAR_PTR ||
         aType == VTK_PARSE_VOID_PTR ||
-        aType == VTK_PARSE_OBJECT_PTR ||
-        aType == VTK_PARSE_OBJECT_REF ||
-        aType == VTK_PARSE_OBJECT ||
-        vtkWrap_IsQtObject(val))
+        (!val->IsEnum &&
+         (aType == VTK_PARSE_OBJECT_PTR ||
+          aType == VTK_PARSE_OBJECT_REF ||
+          aType == VTK_PARSE_OBJECT ||
+          vtkWrap_IsQtObject(val))))
     {
       fprintf(fp, "*");
     }
     /* arrays of unknown size are handled via pointers */
     else if (val->CountHint || vtkWrap_IsPODPointer(val) ||
+             vtkWrap_IsZeroCopyPointer(val) ||
              (vtkWrap_IsArray(val) && val->Value))
     {
       fprintf(fp, "*");
@@ -1055,10 +1090,11 @@ void vtkWrap_DeclareVariable(
     }
     else if (aType == VTK_PARSE_CHAR_PTR ||
              aType == VTK_PARSE_VOID_PTR ||
-             aType == VTK_PARSE_OBJECT_PTR ||
-             aType == VTK_PARSE_OBJECT_REF ||
-             aType == VTK_PARSE_OBJECT ||
-             vtkWrap_IsQtObject(val))
+             (!val->IsEnum &&
+              (aType == VTK_PARSE_OBJECT_PTR ||
+               aType == VTK_PARSE_OBJECT_REF ||
+               aType == VTK_PARSE_OBJECT ||
+               vtkWrap_IsQtObject(val))))
     {
       fprintf(fp, " = NULL");
     }

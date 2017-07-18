@@ -217,7 +217,7 @@ void vtkCirclePackFrontChainLayoutStrategyImplementation::packBrotherNodes(std::
                                                                            vtkTree* tree)
 {
 
-  if(!packedNodes.size())
+  if(packedNodes.empty())
   {
     return;
   }
@@ -635,7 +635,6 @@ void vtkCirclePackFrontChainLayoutStrategyImplementation::findIntersectingCircle
   // No intersection found
   Cj = frontChain.end();
   CjAfterCn = false;
-  return;
 }
 
 void vtkCirclePackFrontChainLayoutStrategyImplementation::findCircleCenter(vtkIdType Ci,

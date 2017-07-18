@@ -21,24 +21,23 @@
 #include "vtkPPainterCommunicator.h"
 #include "vtkRenderingOpenGLConfigure.h"
 #include "vtkRenderWindow.h"
-#ifdef VTK_OPENGL2
-# include "vtkOpenGLRenderUtilities.h"
-#endif
 #include "vtkOpenGLRenderWindow.h"
 #include "vtkTextureObject.h"
 #include "vtkPixelBufferObject.h"
-#include "vtkFrameBufferObject2.h"
 #include "vtkRenderbuffer.h"
 #include "vtkMPI.h"
 
 
 #ifdef VTK_OPENGL2
+# include "vtkOpenGLFramebufferObject.h"
+# include "vtkOpenGLRenderUtilities.h"
 # include "vtkOpenGLHelper.h"
 # include "vtkOpenGLShaderCache.h"
 # include "vtkShaderProgram.h"
 # include "vtkTextureObjectVS.h"
 # include "vtkPSurfaceLICComposite_CompFS.h"
 #else
+# include "vtkFrameBufferObject2.h"
 # include "vtkShader2.h"
 # include "vtkShaderProgram2.h"
 # include "vtkUniformVariables.h"
@@ -402,6 +401,9 @@ void vtkPSurfaceLICComposite::SetContext(vtkOpenGLRenderWindow *rwin)
         rwin->GetShaderCache()->ReadyShaderProgram(vtkTextureObjectVS,
                                           vtkPSurfaceLICComposite_CompFS,
                                             GSSource.c_str());
+
+    // setup a FBO for rendering
+    this->FBO = vtkOpenGLFramebufferObject::New();
 #else
     vtkShader2 *compositeShaderSrc = vtkShader2::New();
     compositeShaderSrc->SetContext(this->Context);
@@ -414,10 +416,11 @@ void vtkPSurfaceLICComposite::SetContext(vtkOpenGLRenderWindow *rwin)
     this->CompositeShader->Build();
 
     compositeShaderSrc->Delete();
-#endif
 
     // setup a FBO for rendering
     this->FBO = vtkFrameBufferObject2::New();
+#endif
+
     this->FBO->SetContext(this->Context);
   }
 }
@@ -557,7 +560,7 @@ int vtkPSurfaceLICComposite::AllReduceVectorMax(
   }
 
   // since integration run's into other blocks data use the max of the
-  // block and it's neighbors for gaurd cell size computation
+  // block and it's neighbors for guard cell size computation
   vectorMax.resize(this->CommSize);
   for (int r=0; r<this->CommSize; ++r)
   {
@@ -850,6 +853,7 @@ int vtkPSurfaceLICComposite::MakeDecompDisjoint(
 
   // move from flat order back to rank indexed order and remove
   // empty extents
+  pRem = ne ? &rem[0] : NULL;
   out.resize(this->CommSize);
   for (size_t e=0; e<ne; ++e, pRem+=4)
   {
@@ -900,7 +904,7 @@ int vtkPSurfaceLICComposite::AddGuardPixels(
   if (this->NormalizeVectors)
   {
     // when normalizing velocity is always 1, all extents have the
-    // same number of gaurd cells.
+    // same number of guard cells.
     int ng
       = static_cast<int>(arc)
       + this->NumberOfEEGuardPixels
@@ -932,7 +936,7 @@ int vtkPSurfaceLICComposite::AddGuardPixels(
   {
     // when not normailzing during integration we need max(V) on the LIC
     // decomp. Each domain has the potential to require a unique number
-    // of gaurd cells.
+    // of guard cells.
     vector<vector<float> > vectorMax;
     this->AllReduceVectorMax(
             this->BlockExts,
@@ -1123,7 +1127,7 @@ int vtkPSurfaceLICComposite::BuildProgram(float *vectors)
   #endif
 
   // save the local decomp
-  // it's the valid region as no gaurd pixels were added
+  // it's the valid region as no guard pixels were added
   this->CompositeExt = newExts[this->CommRank];
 
   int id=0;
@@ -1177,7 +1181,7 @@ int vtkPSurfaceLICComposite::BuildProgram(float *vectors)
   vtkPixelExtentIO::Write(this->CommRank, "LICDecomp.vtk", newExts);
   #endif
 
-  // add gaurd cells to the new decomp that prevent artifacts
+  // add guard cells to the new decomp that prevent artifacts
   deque<deque<vtkPixelExtent> > guardExts;
   deque<deque<vtkPixelExtent> > disjointGuardExts;
   this->AddGuardPixels(newExts, guardExts, disjointGuardExts, vectors);
@@ -1202,7 +1206,7 @@ int vtkPSurfaceLICComposite::BuildProgram(float *vectors)
     << "numberOfExtents=" << nNewExts << endl;
   #endif
 
-  // save the local decomp with gaurd cells
+  // save the local decomp with guard cells
   this->GuardExt = guardExts[this->CommRank];
   this->DisjointGuardExt = disjointGuardExts[this->CommRank];
 

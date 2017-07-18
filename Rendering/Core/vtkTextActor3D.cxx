@@ -84,14 +84,14 @@ double* vtkTextActor3D::GetBounds()
   // that we haven't rendered yet, so we have to make sure our bounds
   // are up to date so that we don't get culled.
   this->UpdateImageActor();
-  double* bounds = this->ImageActor->GetBounds();
+  const double* bounds = this->ImageActor->GetBounds();
   this->Bounds[0] = bounds[0];
   this->Bounds[1] = bounds[1];
   this->Bounds[2] = bounds[2];
   this->Bounds[3] = bounds[3];
   this->Bounds[4] = bounds[4];
   this->Bounds[5] = bounds[5];
-  return bounds;
+  return this->Bounds;
 }
 
 // --------------------------------------------------------------------------
@@ -134,6 +134,54 @@ void vtkTextActor3D::ReleaseGraphicsResources(vtkWindow *win)
 }
 
 // --------------------------------------------------------------------------
+void vtkTextActor3D::SetForceOpaque(bool opaque)
+{
+  this->ImageActor->SetForceOpaque(opaque);
+}
+
+// --------------------------------------------------------------------------
+bool vtkTextActor3D::GetForceOpaque()
+{
+  return this->ImageActor->GetForceOpaque();
+}
+
+// --------------------------------------------------------------------------
+void vtkTextActor3D::ForceOpaqueOn()
+{
+  this->ImageActor->ForceOpaqueOn();
+}
+
+// --------------------------------------------------------------------------
+void vtkTextActor3D::ForceOpaqueOff()
+{
+  this->ImageActor->ForceOpaqueOff();
+}
+
+// --------------------------------------------------------------------------
+void vtkTextActor3D::SetForceTranslucent(bool trans)
+{
+  this->ImageActor->SetForceTranslucent(trans);
+}
+
+// --------------------------------------------------------------------------
+bool vtkTextActor3D::GetForceTranslucent()
+{
+  return this->ImageActor->GetForceTranslucent();
+}
+
+// --------------------------------------------------------------------------
+void vtkTextActor3D::ForceTranslucentOn()
+{
+  this->ImageActor->ForceTranslucentOn();
+}
+
+// --------------------------------------------------------------------------
+void vtkTextActor3D::ForceTranslucentOff()
+{
+  this->ImageActor->ForceTranslucentOff();
+}
+
+// --------------------------------------------------------------------------
 int vtkTextActor3D::RenderOverlay(vtkViewport *viewport)
 {
   int rendered_something = 0;
@@ -169,7 +217,8 @@ int vtkTextActor3D::RenderTranslucentPolygonalGeometry(vtkViewport *viewport)
 // Does this prop have some translucent polygonal geometry?
 int vtkTextActor3D::HasTranslucentPolygonalGeometry()
 {
-  return 1;
+  this->UpdateImageActor();
+  return this->ImageActor->HasTranslucentPolygonalGeometry();
 }
 
 // --------------------------------------------------------------------------

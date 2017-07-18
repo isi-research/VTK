@@ -35,7 +35,7 @@ class VTKFILTERSPARALLELDIY2_EXPORT vtkPResampleWithDataSet : public vtkResample
 {
 public:
   vtkTypeMacro(vtkPResampleWithDataSet, vtkResampleWithDataSet);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   static vtkPResampleWithDataSet *New();
 
@@ -71,8 +71,10 @@ protected:
   vtkPResampleWithDataSet();
   ~vtkPResampleWithDataSet();
 
-  virtual int RequestData(vtkInformation *, vtkInformationVector **,
-                          vtkInformationVector *);
+  int RequestData(vtkInformation *, vtkInformationVector **,
+                          vtkInformationVector *) VTK_OVERRIDE;
+  int RequestUpdateExtent(vtkInformation *, vtkInformationVector **,
+                          vtkInformationVector *) VTK_OVERRIDE;
 
   vtkMultiProcessController *Controller;
   bool UseBalancedPartitionForPointsLookup;

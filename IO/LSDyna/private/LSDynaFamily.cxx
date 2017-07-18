@@ -18,10 +18,9 @@
 ----------------------------------------------------------------------------*/
 
 #include "LSDynaFamily.h"
-//#include "vtksys/SystemTools.hxx"
 
-#include <errno.h>
-#include <ctype.h>
+#include <cerrno>
+#include <cctype>
 #include <cassert>
 
 #include <string>
@@ -102,7 +101,7 @@ vtkLSDynaFile_t VTK_LSDYNA_OPENFILE(const char* fname)
     if ( number > 0 )
     {
       char n[4];
-      sprintf(n, "%02d", number);
+      snprintf(n, sizeof(n), "%02d", number);
       blorb += n;
     }
 
@@ -185,7 +184,7 @@ LSDynaFamily::~LSDynaFamily()
 }
 
 //-----------------------------------------------------------------------------
-void LSDynaFamily::SetDatabaseDirectory( std::string dd )
+void LSDynaFamily::SetDatabaseDirectory( const std::string& dd )
 {
   this->DatabaseDirectory = dd;
 }
@@ -195,7 +194,7 @@ std::string LSDynaFamily::GetDatabaseDirectory()
 }
 
 //-----------------------------------------------------------------------------
-void LSDynaFamily::SetDatabaseBaseName( std::string bn )
+void LSDynaFamily::SetDatabaseBaseName( const std::string& bn )
 {
   this->DatabaseBaseName = bn;
 }
@@ -256,7 +255,7 @@ int LSDynaFamily::ScanDatabaseDirectory()
       adapted = true;
     }
   }
-    return this->Files.size() == 0;
+    return this->Files.empty();
 }
 
 //-----------------------------------------------------------------------------
@@ -427,7 +426,8 @@ int LSDynaFamily::BufferChunk( WordType wType, vtkIdType chunkSizeInWords )
   this->ChunkWord = 0;
   while ( bytesLeft )
   {
-    bytesRead = VTK_LSDYNA_READ(this->FD,(void*) buf,bytesLeft);
+    bytesRead = static_cast<vtkIdType>(
+      VTK_LSDYNA_READ(this->FD,(void*) buf,bytesLeft));
     this->ChunkValid += bytesRead;
     if ( bytesRead < bytesLeft )
     {
@@ -570,7 +570,7 @@ int LSDynaFamily::AdvanceFile()
 {
   if ( this->FNum < 0 && VTK_LSDYNA_ISBADFILE(this->FD) )
   {
-    if ( this->Files.size() > 0 )
+    if ( !this->Files.empty() )
     {
       this->FNum = 0;
       this->FAdapt = 0;
@@ -705,7 +705,7 @@ vtkIdType LSDynaFamily::GetStateSize() const
 //-----------------------------------------------------------------------------
 vtkIdType LSDynaFamily::GetNumberOfFiles()
 {
-  return this->Files.size();
+  return static_cast<vtkIdType>(this->Files.size());
 }
 
 //-----------------------------------------------------------------------------

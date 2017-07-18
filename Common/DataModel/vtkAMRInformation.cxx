@@ -120,7 +120,7 @@ namespace
             const std::vector<unsigned int>& bin =
               this->GetBin(idx);
             std::vector<unsigned int>::const_iterator iter;
-            for(iter=bin.begin(); iter!=bin.end(); iter++)
+            for(iter=bin.begin(); iter!=bin.end(); ++iter)
             {
               boxes.insert(*iter);
             }
@@ -546,13 +546,13 @@ void vtkAMRInformation::GenerateParentChildInformation()
   {
     this->GenerateRefinementRatio();
   }
-  AllChildren.resize(this->GetNumberOfLevels());
-  AllParents.resize(this->GetNumberOfLevels());
+  this->AllChildren.resize(this->GetNumberOfLevels());
+  this->AllParents.resize(this->GetNumberOfLevels());
 
   unsigned int numLevels = this->GetNumberOfLevels();
   for(unsigned int i=1; i<numLevels; i++)
   {
-    this->CalculateParentChildRelationShip(i, AllChildren[i-1], AllParents[i]);
+    this->CalculateParentChildRelationShip(i, this->AllChildren[i-1], this->AllParents[i]);
   }
 }
 
@@ -756,7 +756,7 @@ void vtkAMRInformation::CalculateParentChildRelationShip(
       std::set<unsigned int> boxes;
       binner.GetBoxesInIntersectingBins(box, boxes);
       std::set<unsigned int>::iterator iter;
-      for (iter=boxes.begin(); iter!=boxes.end(); iter++)
+      for (iter=boxes.begin(); iter!=boxes.end(); ++iter)
       {
         vtkAMRBox potentialParent = this->GetAMRBox(level - 1, *iter);
         if (!potentialParent.IsInvalid())

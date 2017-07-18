@@ -654,7 +654,7 @@ void vtkChartXYZ::DrawTickMarks(vtkContext2D *painter)
     }
 
     // re-apply the Box matrix and draw the tick marks as points
-    if (tickPoints.size() != 0)
+    if (!tickPoints.empty())
     {
       context->PushMatrix();
       context->AppendTransform(this->Box.GetPointer());
@@ -1601,7 +1601,7 @@ vtkIdType vtkChartXYZ::AddPlot(vtkPlot3D * plot)
   this->AddItem(plot);
   plot->SetChart(this);
   this->Plots.push_back(plot);
-  vtkIdType plotIndex = this->Plots.size() - 1;
+  vtkIdType plotIndex = static_cast<vtkIdType>(this->Plots.size() - 1);
 
   // the first plot added to the chart defines the names of the axes
   if (plotIndex == 0)

@@ -115,7 +115,7 @@ vtkMTimeType vtkPoints::GetMTime()
   return doTime;
 }
 
-int vtkPoints::Allocate(const vtkIdType sz, const vtkIdType ext)
+int vtkPoints::Allocate(vtkIdType sz, vtkIdType ext)
 {
   int numComp = this->Data->GetNumberOfComponents();
   return this->Data->Allocate(sz * numComp, ext * numComp);
@@ -217,7 +217,7 @@ void vtkPoints::PrintSelf(ostream& os, vtkIndent indent)
   }
 
   os << indent << "Number Of Points: " << this->GetNumberOfPoints() << "\n";
-  double *bounds = this->GetBounds();
+  const double *bounds = this->GetBounds();
   os << indent << "Bounds: \n";
   os << indent << "  Xmin,Xmax: (" << bounds[0] << ", " << bounds[1] << ")\n";
   os << indent << "  Ymin,Ymax: (" << bounds[2] << ", " << bounds[3] << ")\n";

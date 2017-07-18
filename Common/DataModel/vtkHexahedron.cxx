@@ -434,7 +434,10 @@ void vtkHexahedron::Contour(double value, vtkDataArray *cellScalars,
     if ( pts[0] != pts[1] && pts[0] != pts[2] && pts[1] != pts[2] )
     {
       newCellId = offset + polys->InsertNextCell(3,pts);
-      outCd->CopyData(inCd,cellId,newCellId);
+      if (outCd)
+      {
+        outCd->CopyData(inCd, cellId, newCellId);
+      }
     }
   }
 }
@@ -522,11 +525,11 @@ int vtkHexahedron::IntersectWithLine(double p1[3], double p2[3], double tol,
         switch (faceNum)
         {
           case 0:
-            pcoords[0] = 0.0; pcoords[0] = pc[0]; pcoords[1] = 0.0;
+            pcoords[0] = 0.0; pcoords[1] = pc[0]; pcoords[2] = 0.0;
             break;
 
           case 1:
-            pcoords[0] = 1.0; pcoords[0] = pc[0]; pcoords[1] = 0.0;
+            pcoords[0] = 1.0; pcoords[1] = pc[0]; pcoords[2] = 0.0;
             break;
 
           case 2:

@@ -37,7 +37,6 @@
 #include "vtkVoxel.h"
 
 #include <deque>
-//#include <set>
 #include <vector>
 
 #include <cassert>
@@ -479,7 +478,7 @@ public:
   // Public only for vtkCompactHyperOctree.
   vtkIdType GetChildHistorySize()
   {
-      return this->ChildHistory.size();
+      return static_cast<vtkIdType>(this->ChildHistory.size());
   }
 
 protected:
@@ -713,7 +712,7 @@ public:
   //---------------------------------------------------------------------------
   vtkIdType GetNumberOfLeaves() VTK_OVERRIDE
   {
-      return this->LeafParent.size();
+      return static_cast<vtkIdType>(this->LeafParent.size());
   }
 
   //---------------------------------------------------------------------------
@@ -750,7 +749,7 @@ public:
   // Public only for the vtkCompactHyperOctreeCursor.
   int GetNumberOfNodes() VTK_OVERRIDE
   {
-      assert("post: not_empty" && this->Nodes.size()>0);
+      assert("post: not_empty" && !this->Nodes.empty());
       return static_cast<int>(this->Nodes.size());
   }
 
@@ -3226,7 +3225,6 @@ void vtkHyperOctreeLightWeightCursor::ToChild(int child)
     this->IsLeaf=node->IsChildLeaf(child);
     this->Level += 1;
   }
-  return;
 }
 
 
@@ -3620,7 +3618,7 @@ void vtkHyperOctree::TraverseDualRecursively(
 }
 
 //----------------------------------------------------------------------------
-// Contour the cell assocaited with the center point.
+// Contour the cell associated with the center point.
 // if it has not already been contoured.
 void vtkHyperOctree::EvaluateDualCorner(
   vtkHyperOctreeLightWeightCursor* neighborhood)

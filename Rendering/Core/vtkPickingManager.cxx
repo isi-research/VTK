@@ -73,7 +73,7 @@ public:
                          void *clientData,
                          void *callData);
 
-  // Select the best picker based on various criterias such as z-depth,
+  // Select the best picker based on various criteria such as z-depth,
   // 2D overlay and/or distance to picked point.
   vtkAbstractPicker* SelectPicker();
 
@@ -124,7 +124,7 @@ public:
   // Predicate comparing a vtkAbstractPicker*
   // and a vtkSmartPointer<vtkAbstractPicker> using the PickerObjectsType.
   // As we use a vtkSmartPointer, this predicate allows to compare the equality
-  // of a pointer on a vtkAbstractPicker with the adress contained in
+  // of a pointer on a vtkAbstractPicker with the address contained in
   // a corresponding vtkSmartPointer.
   struct equal_smartPtrPicker
   {
@@ -245,7 +245,7 @@ vtkAbstractPicker* vtkPickingManager::vtkInternal::SelectPicker()
   vtkAbstractPicker* selectedPicker =
     this->ComputePickerSelection(X, Y, 0., renderer);
 
-  // Keep track of the lastet picker choosen & last picking time.
+  // Keep track of the last picker chosen & last picking time.
   this->LastSelectedPicker = selectedPicker;
   this->LastPickingTime = this->CurrentInteractionTime;
 
@@ -414,7 +414,7 @@ void vtkPickingManager::RemovePicker(vtkAbstractPicker* picker,
   it->second.erase(itObj);
 
   // Delete the picker when it is not associated with any object anymore.
-  if(it->second.size() == 0)
+  if(it->second.empty())
   {
     this->Internal->Pickers.erase(it);
   }
@@ -437,11 +437,11 @@ void vtkPickingManager::RemoveObject(vtkObject* object)
     {
       it->second.erase(itObj);
 
-      if (it->second.size() == 0)
+      if (it->second.empty())
       {
         vtkPickingManager::vtkInternal::PickerObjectsType::iterator
           toRemove = it;
-        it++;
+        ++it;
         this->Internal->Pickers.erase(toRemove);
         continue;
       }

@@ -20,13 +20,15 @@
 
 
 #include "vtkFloatArray.h"
-#include "vtkFrameBufferObject2.h"
+#include "vtkOpenGLFramebufferObject.h"
 #include "vtkMath.h"
 #include "vtkObjectFactory.h"
+#include "vtkOpenGLBufferObject.h"
 #include "vtkOpenGLError.h"
 #include "vtkOpenGLRenderUtilities.h"
 #include "vtkOpenGLRenderWindow.h"
 #include "vtkOpenGLShaderCache.h"
+#include "vtkOpenGLVertexArrayObject.h"
 #include "vtkPainterCommunicator.h"
 #include "vtkPixelBufferObject.h"
 #include "vtkPixelExtent.h"
@@ -110,7 +112,7 @@ class vtkLICPingPongBufferManager
 {
 public:
   vtkLICPingPongBufferManager(
-      vtkFrameBufferObject2 *fbo,
+      vtkOpenGLFramebufferObject *fbo,
       unsigned int *bufSize,
       vtkTextureObject *vectorTexture,
       vtkTextureObject *maskVectorTexture,
@@ -146,6 +148,9 @@ public:
 
     this->DettachBuffers(fbo);
 
+    this->QuadVBO = NULL;
+    this->LastQuadProgram = NULL;
+
     #if vtkLineIntegralConvolution2DDEBUG >= 3
     this->Print(cerr);
     #endif
@@ -154,6 +159,10 @@ public:
   ~vtkLICPingPongBufferManager()
   {
     // free buffers
+    if (this->QuadVBO)
+    {
+      this->QuadVBO->Delete();
+    }
     this->LICTexture0->Delete();
     this->SeedTexture0->Delete();
     this->LICTexture1->Delete();
@@ -257,7 +266,7 @@ public:
   // Description:
   // Clear all the buffers used for writing.
   void ClearBuffers(
-        vtkFrameBufferObject2 *fbo,
+        vtkOpenGLFramebufferObject *fbo,
         const vtkPixelExtent &viewExt,
         const deque<vtkPixelExtent> &extents,
         int clearEETex = 0)
@@ -312,7 +321,7 @@ public:
   // Description:
   // Clear the given buffer
   void ClearBuffer(
-        vtkFrameBufferObject2 *fbo,
+        vtkOpenGLFramebufferObject *fbo,
         vtkTextureObject *tex,
         const vtkPixelExtent &viewExt,
         const deque<vtkPixelExtent> &extents)
@@ -429,7 +438,7 @@ public:
   // Description:
   // Setup read/write from/to the active lic/seed buffer texture pair
   // for LIC pass.
-  void AttachLICBuffers(vtkFrameBufferObject2 *vtkNotUsed(fbo))
+  void AttachLICBuffers(vtkOpenGLFramebufferObject *vtkNotUsed(fbo))
   {
     // activate read textures
     vtkTextureObject **readTex = this->Textures[this->ReadIndex];
@@ -465,7 +474,7 @@ public:
 
   // Description:
   // Remove input/output bufers used for computing the LIC.
-  void DettachLICBuffers(vtkFrameBufferObject2 *vtkNotUsed(fbo))
+  void DettachLICBuffers(vtkOpenGLFramebufferObject *vtkNotUsed(fbo))
   {
     vtkOpenGLStaticCheckErrorMacro("failed at glDrawBuffers");
     glFramebufferTexture2D(
@@ -494,7 +503,7 @@ public:
 
   // Description:
   // Attach read/write buffers for transform pass.
-  void AttachImageVectorBuffer(vtkFrameBufferObject2 *vtkNotUsed(fbo))
+  void AttachImageVectorBuffer(vtkOpenGLFramebufferObject *vtkNotUsed(fbo))
   {
     this->VectorTexture->Activate();
 
@@ -513,7 +522,7 @@ public:
 
   // Description:
   // Attach read/write buffers for transform pass.
-  void DettachImageVectorBuffer(vtkFrameBufferObject2 *vtkNotUsed(fbo))
+  void DettachImageVectorBuffer(vtkOpenGLFramebufferObject *vtkNotUsed(fbo))
   {
     this->VectorTexture->Deactivate();
 
@@ -531,7 +540,7 @@ public:
 
   // Description:
   // Attach read/write buffers for EE pass.
-  void AttachEEBuffer(vtkFrameBufferObject2 *vtkNotUsed(fbo))
+  void AttachEEBuffer(vtkOpenGLFramebufferObject *vtkNotUsed(fbo))
   {
     vtkTextureObject **readTex = this->Textures[this->ReadIndex];
     readTex[0]->Activate();
@@ -553,7 +562,7 @@ public:
 
   // Description:
   // Attach read/write buffers for EE pass.
-  void DettachEEBuffer(vtkFrameBufferObject2 *vtkNotUsed(fbo))
+  void DettachEEBuffer(vtkOpenGLFramebufferObject *vtkNotUsed(fbo))
   {
     vtkTextureObject **readTex = this->Textures[this->ReadIndex];
     readTex[0]->Deactivate();
@@ -573,7 +582,7 @@ public:
   // Description:
   // Deactivates and removes all read/write buffers that were in
   // use during the run, restoring a pristine FBO/texture unit state.
-  void DettachBuffers(vtkFrameBufferObject2 *vtkNotUsed(fbo))
+  void DettachBuffers(vtkOpenGLFramebufferObject *vtkNotUsed(fbo))
   {
     glFramebufferTexture2D(
           GL_DRAW_FRAMEBUFFER,
@@ -706,21 +715,42 @@ public:
     computeExtent.CellToNode();
     computeExtent.GetData(quadBounds);
 
-    float tcoords[] = {
-      computeBounds[0], computeBounds[2],
-      computeBounds[1], computeBounds[2],
-      computeBounds[1], computeBounds[3],
-      computeBounds[0], computeBounds[3]};
+    if (!this->QuadVBO)
+    {
+      this->QuadVBO = vtkOpenGLBufferObject::New();
+      this->QuadVBO->GenerateBuffer(vtkOpenGLBufferObject::ArrayBuffer);
+    }
+    if (this->LastQuadProgram != cbo->Program)
+    {
+      cbo->VAO->ShaderProgramChanged();
+      cbo->VAO->Bind();
+      if (!cbo->VAO->AddAttributeArray(cbo->Program, this->QuadVBO, "vertexMC", 0,
+          sizeof(float)*5, VTK_FLOAT, 3, false))
+      {
+        vtkGenericWarningMacro(<< "Error setting 'vertexMC' in shader VAO.");
+      }
+      if (!cbo->VAO->AddAttributeArray(cbo->Program, this->QuadVBO, "tcoordMC", sizeof(float)*3,
+          sizeof(float)*5, VTK_FLOAT, 2, false))
+      {
+        vtkGenericWarningMacro(<< "Error setting 'tcoordMC' in shader VAO.");
+      }
+      this->LastQuadProgram = cbo->Program;
+    }
 
-    float verts[] = {
+    float vwt[] = {
+      computeBounds[0]*2.0f-1.0f, computeBounds[3]*2.0f-1.0f, 0.0f,
+      computeBounds[0], computeBounds[3],
       computeBounds[0]*2.0f-1.0f, computeBounds[2]*2.0f-1.0f, 0.0f,
-      computeBounds[1]*2.0f-1.0f, computeBounds[2]*2.0f-1.0f, 0.0f,
+      computeBounds[0], computeBounds[2],
       computeBounds[1]*2.0f-1.0f, computeBounds[3]*2.0f-1.0f, 0.0f,
-      computeBounds[0]*2.0f-1.0f, computeBounds[3]*2.0f-1.0f, 0.0f};
+      computeBounds[1], computeBounds[3],
+      computeBounds[1]*2.0f-1.0f, computeBounds[2]*2.0f-1.0f, 0.0f,
+      computeBounds[1], computeBounds[2]};
 
-    vtkOpenGLRenderUtilities::RenderQuad(verts, tcoords,
-      cbo->Program, cbo->VAO);
-    vtkOpenGLStaticCheckErrorMacro("failed at RenderQuad");
+    this->QuadVBO->Bind();
+    this->QuadVBO->Upload(vwt, 20, vtkOpenGLBufferObject::ArrayBuffer);
+    cbo->VAO->Bind();
+    glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   }
 
   #if (vtkLineIntegralConvolution2DDEBUG >= 1)
@@ -810,6 +840,9 @@ private:
   vtkTextureObject *SeedTexture0;
   vtkTextureObject *LICTexture1;
   vtkTextureObject *SeedTexture1;
+
+  vtkOpenGLBufferObject *QuadVBO;
+  vtkShaderProgram *LastQuadProgram;
 
   int  ReadIndex;
   vtkTextureObject *PingTextures[2];
@@ -915,7 +948,7 @@ void FindMinMax(
 // find min/max of unmasked fragments across all regions
 // download each search each region individually
 void StreamingFindMinMax(
-      vtkFrameBufferObject2 *fbo,
+      vtkOpenGLFramebufferObject *fbo,
       vtkTextureObject *tex,
       const deque<vtkPixelExtent> &extents,
       float &min,
@@ -983,7 +1016,7 @@ vtkLineIntegralConvolution2D::vtkLineIntegralConvolution2D()
   this->Comm = NULL;
 
   this->Context = NULL;
-  this->FBO = vtkFrameBufferObject2::New();
+  this->FBO = vtkOpenGLFramebufferObject::New();
 
   this->ShadersNeedBuild = 1;
   this->VTShader = NULL;
@@ -1097,7 +1130,7 @@ bool vtkLineIntegralConvolution2D::IsSupported(vtkRenderWindow *renWin)
   }
 
   return vtkTextureObject::IsSupported(context, true, false, false)
-     && vtkFrameBufferObject2::IsSupported(context)
+     && vtkOpenGLFramebufferObject::IsSupported(context)
      && vtkPixelBufferObject::IsSupported(context);
 }
 

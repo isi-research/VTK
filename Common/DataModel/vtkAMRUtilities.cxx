@@ -420,7 +420,7 @@ void vtkAMRUtilities::BlankGridsAtLevel(vtkOverlappingAMR* amr, int levelIdx,
 
       // For each higher res box fill in the cells that
       // it covers
-      for (iter=dsChildren.begin(); iter!=dsChildren.end(); iter++)
+      for (iter=dsChildren.begin(); iter!=dsChildren.end(); ++iter)
       {
         vtkAMRBox ibox;;
         int childGridIndex  = amr->GetCompositeIndex(levelIdx+1, *iter);
@@ -430,7 +430,9 @@ void vtkAMRUtilities::BlankGridsAtLevel(vtkOverlappingAMR* amr, int levelIdx,
         }
         if (amr->GetAMRInfo()->GetCoarsenedAMRBox(levelIdx+1, *iter, ibox))
         {
-          ibox.Intersect(box);
+          bool shouldBeTrue = ibox.Intersect(box);
+          assert(shouldBeTrue); // if the boxes don't intersect, there is a bug
+          (void)shouldBeTrue; // to avoid warning in release
           const int *loCorner=ibox.GetLoCorner();
           int hi[3];
           ibox.GetValidHiCorner(hi);

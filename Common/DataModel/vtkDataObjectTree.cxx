@@ -195,7 +195,7 @@ void vtkDataObjectTree::CopyStructure(vtkCompositeDataSet* compositeSource)
     source->Internals->Children.begin();
   vtkDataObjectTreeInternals::Iterator myIter =
     this->Internals->Children.begin();
-  for (; srcIter != source->Internals->Children.end(); ++srcIter, myIter++)
+  for (; srcIter != source->Internals->Children.end(); ++srcIter, ++myIter)
   {
     vtkDataObjectTree* compositeSrc =
       vtkDataObjectTree::SafeDownCast(srcIter->DataObject);
@@ -280,7 +280,7 @@ void vtkDataObjectTree::SetDataSetFrom(vtkDataObjectTreeIterator* iter,
 
   vtkDataObjectTreeIndex index = iter->GetCurrentIndex();
 
-  if (index.size() == 0)
+  if (index.empty())
   {
     // Sanity check.
     vtkErrorMacro("Invalid index returned by iterator.");
@@ -351,7 +351,7 @@ vtkDataObject* vtkDataObjectTree::GetDataSet(vtkCompositeDataIterator* composite
 
   vtkDataObjectTreeIndex index = iter->GetCurrentIndex();
 
-  if (index.size() == 0)
+  if (index.empty())
   {
     // Sanity check.
     vtkErrorMacro("Invalid index returned by iterator.");
@@ -393,7 +393,7 @@ vtkInformation* vtkDataObjectTree::GetMetaData(vtkCompositeDataIterator* composi
 
   vtkDataObjectTreeIndex index = iter->GetCurrentIndex();
 
-  if (index.size() == 0)
+  if (index.empty())
   {
     // Sanity check.
     vtkErrorMacro("Invalid index returned by iterator.");
@@ -435,7 +435,7 @@ int vtkDataObjectTree::HasMetaData(vtkCompositeDataIterator* compositeIter)
 
   vtkDataObjectTreeIndex index = iter->GetCurrentIndex();
 
-  if (index.size() == 0)
+  if (index.empty())
   {
     // Sanity check.
     vtkErrorMacro("Invalid index returned by iterator.");

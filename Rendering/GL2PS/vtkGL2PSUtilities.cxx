@@ -24,6 +24,7 @@
 #include "vtkOpenGLGL2PSHelper.h"
 #include "vtkPath.h"
 #include "vtkRenderWindow.h"
+#include "vtkStdString.h"
 #include "vtkTextProperty.h"
 #include "vtkTextRenderer.h"
 
@@ -40,6 +41,94 @@ vtkRenderWindow *vtkGL2PSUtilities::RenderWindow = NULL;
 bool vtkGL2PSUtilities::TextAsPath = false;
 float vtkGL2PSUtilities::PointSizeFactor = 5.f / 7.f;
 float vtkGL2PSUtilities::LineWidthFactor = 5.f / 7.f;
+
+
+namespace
+{
+
+bool GetMetrics(vtkTextProperty* tprop, const char* str, vtkTextRenderer::Metrics& m)
+{
+    int dpi = vtkGL2PSUtilities::GetRenderWindow()->GetDPI();
+    vtkTextRenderer* tren = vtkTextRenderer::GetInstance();
+    if (! tren)
+    {
+      return false;
+    }
+    vtkNew<vtkTextProperty> tpropTmp;
+    tpropTmp->ShallowCopy(tprop);
+    tpropTmp->SetOrientation(0.);
+    if(! tren->GetMetrics(tpropTmp.Get(), str, m, dpi))
+    {
+      return false;
+    }
+    return true;
+}
+
+// replace \n with space as PS treats it as a space but PDF just removes them.
+// we also need this so that we get the correct bounding box for PDFs
+// considering that we do not address multi-line strings yet.
+void GetSpaceStr(const char* str, vtkStdString* spaceStr)
+{
+    *spaceStr = str;
+    std::string::size_type eolPos = 0;
+    while ((eolPos = spaceStr->find('\n', eolPos)) != std::string::npos)
+    {
+      spaceStr->replace(eolPos, 1, 1, ' ');
+      ++eolPos;
+    }
+}
+
+/**
+ * Computes the bottom left corner 'blpos' and a string with \n replaced
+ * by space 'spaceStr' for the string 'str' with properties 'tprop'
+ * and the anchor 'pos'.
+ *
+ * We need this because PDF does not support text alignment.
+ * 'spaceStr' is needed because postscript and PDF do not support
+ * multiline text and we don't implement it yet for TextAsPath false.
+ */
+bool ComputeBottomLeft(vtkTextProperty* tprop, vtkTuple<int,4> bbox,
+                       double pos[3], double blpos[3])
+{
+  std::copy(pos, pos + 3, blpos);
+  // Postscript and PDF do not support multiline text - this is not
+  // implemented yet for TextAsPath == 0 implement alignment for PDF
+  if (gl2psGetFileFormat () == GL2PS_PDF &&
+      ! vtkGL2PSUtilities::GetTextAsPath() &&
+      (tprop->GetJustification() != VTK_TEXT_LEFT ||
+       tprop->GetVerticalJustification() != VTK_TEXT_BOTTOM))
+  {
+    double width = bbox[1] - bbox[0] + 1;
+    double height = bbox[3] - bbox[2] + 1;
+    switch(tprop->GetJustification())
+    {
+    case VTK_TEXT_CENTERED:
+      blpos[0] -= width / 2;
+      break;
+    case VTK_TEXT_RIGHT:
+      blpos[0] -= width;
+      break;
+    }
+    switch(tprop->GetVerticalJustification())
+    {
+    case VTK_TEXT_CENTERED:
+      blpos[1] -= height / 2;
+      break;
+    case VTK_TEXT_TOP:
+      blpos[1] -= height;
+      break;
+    }
+    blpos[2] = 0;
+    return true;
+  }
+  else
+  {
+    return false;
+  }
+}
+}
+
+
 
 void vtkGL2PSUtilities::DrawString(const char *str,
                                    vtkTextProperty *tprop, double pos[3],
@@ -125,7 +214,47 @@ void vtkGL2PSUtilities::DrawString(const char *str,
     rgba[3] = tprop->GetOpacity();
 
     glRasterPos3dv(pos);
-    gl2psTextOptColor(str, fontname, fontSize, align, angle, rgba);
+    // get pos in window coordinates
+    GLboolean valid;
+    glGetBooleanv(GL_CURRENT_RASTER_POSITION_VALID, &valid);
+    if(GL_FALSE == valid)
+    {
+      // we cannot draw the text.
+      return;
+    }
+    double posWin[4];
+    glGetDoublev(GL_CURRENT_RASTER_POSITION, posWin);
+    // draw text by passing the bottom left corner as PDF does not support
+    // alignment.
+    double blpos[3];
+    vtkStdString spaceStr;
+    // compute the bounding box and the string without \n
+    vtkTextRenderer::Metrics m;
+    ::GetSpaceStr(str, &spaceStr);
+    if (! ::GetMetrics(tprop, spaceStr.c_str(), m))
+    {
+      // we cannot draw the text
+      return;
+    }
+    if (::ComputeBottomLeft(tprop, m.BoundingBox, posWin, blpos))
+    {
+      // move the bottom left corner to the baseline as this is how PDF
+      // draws text
+      blpos[1] -= m.Descent[1];
+      gl2psTextOptColorBL(spaceStr.c_str(), fontname, fontSize, align, angle, rgba,
+                          blpos[0], blpos[1]);
+    }
+    else
+    {
+      // move the bottom left corner to the baseline as this
+      // how PDF draws text.
+      // See:
+      // 10.070 How do I draw glBitmap() or glDrawPixels() primitives that
+      // have an initial glRasterPos() outside the window's left or bottom edge?
+      // https://www.opengl.org/archives/resources/faq/technical/clipping.htm#0070
+      glBitmap(0, 0, 0, 0, 0, - m.Descent[1], NULL);
+      gl2psTextOptColor(str, fontname, fontSize, align, angle, rgba);
+    }
   }
   else
   {
@@ -495,7 +624,7 @@ void vtkGL2PSUtilities::DrawPathPS(vtkPath *path, double rasterPos[3],
   out << "grestore" << endl;
 
   glRasterPos3dv(rasterPos);
-  gl2psSpecial(gl2psGetFileFormat(), out.str().c_str());
+  gl2psSpecial(gl2psGetFileFormat(), out.str().c_str(), NULL);
 }
 
 void vtkGL2PSUtilities::DrawPathPDF(vtkPath *path, double rasterPos[3],
@@ -543,10 +672,7 @@ void vtkGL2PSUtilities::DrawPathPDF(vtkPath *path, double rasterPos[3],
          static_cast<float>(rgba[1])/255.f << " " <<
          static_cast<float>(rgba[2])/255.f <<
          (strokeWidth > 1e-5 ? " RG" : " rg") << endl;
-  // opacity
-  out << static_cast<float>(rgba[3])/255.f
-      << (strokeWidth > 1e-5 ? " CA" : " ca") << endl;
-  // translate
+  // translation
   out << 1.f << " " << 0.f << " " << 0.f << " " << 1.f << " "
       << windowPos[0] << " " << windowPos[1] << " cm" << endl;
   // rotate
@@ -644,7 +770,13 @@ void vtkGL2PSUtilities::DrawPathPDF(vtkPath *path, double rasterPos[3],
   out << "Q" << endl; // Pop state
 
   glRasterPos3dv(rasterPos);
-  gl2psSpecial(gl2psGetFileFormat(), out.str().c_str());
+  GL2PSrgba colorRgba;
+  colorRgba[0] = rgba[0]/255.0;
+  colorRgba[1] = rgba[1]/255.0;
+  colorRgba[2] = rgba[2]/255.0;
+  colorRgba[3] = rgba[3]/255.0;
+
+  gl2psSpecial(gl2psGetFileFormat(), out.str().c_str(), colorRgba);
 }
 
 void vtkGL2PSUtilities::DrawPathSVG(vtkPath *path, double rasterPos[3],
@@ -805,7 +937,7 @@ void vtkGL2PSUtilities::DrawPathSVG(vtkPath *path, double rasterPos[3],
       << "</g>" << endl;
 
   glRasterPos3dv(rasterPos);
-  gl2psSpecial(gl2psGetFileFormat(), out.str().c_str());
+  gl2psSpecial(gl2psGetFileFormat(), out.str().c_str(), NULL);
 }
 
 
@@ -823,7 +955,6 @@ inline void vtkGL2PSUtilities::ProjectPoint(double point[4],
   vtkNew<vtkMatrix4x4> modelviewMatrix;
   modelviewMatrix->DeepCopy(glMatrix);
   modelviewMatrix->Transpose();
-
   vtkNew<vtkMatrix4x4> transformMatrix;
   vtkMatrix4x4::Multiply4x4(projectionMatrix.GetPointer(),
                             modelviewMatrix.GetPointer(),

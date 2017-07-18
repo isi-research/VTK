@@ -51,7 +51,7 @@ class VTKRENDERINGCORE_EXPORT vtkTextActor : public vtkTexturedActor2D
 {
 public:
   vtkTypeMacro(vtkTextActor,vtkTexturedActor2D);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   /**
    * Instantiate object with a rectangle in normaled view coordinates
@@ -63,7 +63,7 @@ public:
    * Shallow copy of this text actor. Overloads the virtual
    * vtkProp method.
    */
-  void ShallowCopy(vtkProp *prop);
+  void ShallowCopy(vtkProp *prop) VTK_OVERRIDE;
 
   //@{
   /**
@@ -176,7 +176,7 @@ public:
   //@}
 
   /**
-   * Return the bounding box coordinates of the text in viewport coordinates.
+   * Return the bounding box coordinates of the text in pixels.
    * The bbox array is populated with [ xmin, xmax, ymin, ymax ]
    * values in that order.
    */
@@ -262,7 +262,7 @@ public:
    * The parameter window could be used to determine which graphic
    * resources to release.
    */
-  virtual void ReleaseGraphicsResources(vtkWindow *);
+  void ReleaseGraphicsResources(vtkWindow *) VTK_OVERRIDE;
 
   //@{
   /**
@@ -270,15 +270,15 @@ public:
    * DO NOT USE THIS METHOD OUTSIDE OF THE RENDERING PROCESS.
    * Draw the text actor to the screen.
    */
-  virtual int RenderOpaqueGeometry(vtkViewport* viewport);
-  virtual int RenderTranslucentPolygonalGeometry(vtkViewport* ) {return 0;};
-  virtual int RenderOverlay(vtkViewport* viewport);
+  int RenderOpaqueGeometry(vtkViewport* viewport) VTK_OVERRIDE;
+  int RenderTranslucentPolygonalGeometry(vtkViewport* ) VTK_OVERRIDE {return 0;};
+  int RenderOverlay(vtkViewport* viewport) VTK_OVERRIDE;
   //@}
 
   /**
    * Does this prop have some translucent polygonal geometry?
    */
-  virtual int HasTranslucentPolygonalGeometry();
+  int HasTranslucentPolygonalGeometry() VTK_OVERRIDE;
 
 protected:
   /**
@@ -293,7 +293,7 @@ protected:
     vtkTextProperty *tprop, vtkViewport *viewport, int bbox[4]);
 
    vtkTextActor();
-  ~vtkTextActor();
+  ~vtkTextActor() VTK_OVERRIDE;
 
   int     MinimumSize[2];
   float   MaximumLineHeight;

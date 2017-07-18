@@ -2002,8 +2002,8 @@ int vtkPolyhedron::IsInside(double x[3], double tolerance)
 //----------------------------------------------------------------------------
 // Determine whether or not a polyhedron is convex. This method is adapted
 // from Devillers et al., "Checking the Convexity of Polytopes and the
-// Planarity of Subdivisions", Computational Geometry, Volume 11, Issues 3 – 4,
-// December 1998, Pages 187 – 208.
+// Planarity of Subdivisions", Computational Geometry, Volume 11, Issues 3 - 4,
+// December 1998, Pages 187 - 208.
 bool vtkPolyhedron::IsConvex()
 {
   double x[2][3], n[3], c[3], c0[3], c1[3], c0p[3], c1p[3], n0[3], n1[3];
@@ -3093,7 +3093,10 @@ void vtkPolyhedron::Contour(double value,
     }
 
     vtkIdType newCellId = offset + polys->InsertNextCell(npts, pts);
-    outCd->CopyData(inCd, cellId, newCellId);
+    if (outCd)
+    {
+      outCd->CopyData(inCd, cellId, newCellId);
+    }
   }
 
   this->Internal->RestoreFaceArrayAndEdgeTable(this->Faces, this->EdgeTable);

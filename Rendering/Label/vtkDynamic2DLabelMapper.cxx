@@ -96,9 +96,9 @@ void vtkDynamic2DLabelMapper::SetPriorityArrayName(const char* name)
 
 //----------------------------------------------------------------------------
 template<typename T>
-void vtkDynamic2DLabelMapper_PrintComponent(char *output, const char *format, int index, const T *array)
+void vtkDynamic2DLabelMapper_PrintComponent(char *output, size_t outputSize, const char *format, int index, const T *array)
 {
-  sprintf(output, format, array[index]);
+  snprintf(output, outputSize, format, array[index]);
 }
 
 //----------------------------------------------------------------------------
@@ -275,7 +275,7 @@ void vtkDynamic2DLabelMapper::RenderOpaqueGeometry(vtkViewport *viewport,
         {
           case VTK_VOID: FormatString = "0x%x"; break;
 
-          // dont use vtkTypeTraits::ParseFormat for character types as parse formats
+          // don't use vtkTypeTraits::ParseFormat for character types as parse formats
           // aren't the same as print formats for these types.
           case VTK_BIT:
           case VTK_SHORT:
@@ -314,11 +314,11 @@ void vtkDynamic2DLabelMapper::RenderOpaqueGeometry(vtkViewport *viewport,
       }
       else if (stringData)
       {
-        FormatString = ""; // we'll use vtkStdString::operator+ instead of sprintf
+        FormatString = "";
       }
       else if (uStringData)
       {
-        FormatString = "unicode"; // we'll use vtkStdString::operator+ instead of sprintf
+        FormatString = "unicode";
       }
       else
       {
@@ -360,7 +360,7 @@ void vtkDynamic2DLabelMapper::RenderOpaqueGeometry(vtkViewport *viewport,
 
       if ( pointIdLabels )
       {
-        sprintf(TempString, LiveFormatString, i);
+        snprintf(TempString, sizeof(TempString), LiveFormatString, i);
         ResultString = TempString;
       }
       else
@@ -373,7 +373,7 @@ void vtkDynamic2DLabelMapper::RenderOpaqueGeometry(vtkViewport *viewport,
           {
             switch (numericData->GetDataType())
             {
-              vtkTemplateMacro(vtkDynamic2DLabelMapper_PrintComponent(TempString, LiveFormatString, activeComp, static_cast<VTK_TT *>(rawData)));
+              vtkTemplateMacro(vtkDynamic2DLabelMapper_PrintComponent(TempString, sizeof(TempString), LiveFormatString, activeComp, static_cast<VTK_TT *>(rawData)));
             }
             ResultString = TempString;
           }
@@ -387,7 +387,7 @@ void vtkDynamic2DLabelMapper::RenderOpaqueGeometry(vtkViewport *viewport,
               switch (numericData->GetDataType())
               {
                 vtkTemplateMacro(
-                  vtkDynamic2DLabelMapper_PrintComponent(TempString,
+                  vtkDynamic2DLabelMapper_PrintComponent(TempString, sizeof(TempString),
                                                       LiveFormatString,
                                                       j,
                                                       static_cast<VTK_TT *>(rawData)));
@@ -408,7 +408,7 @@ void vtkDynamic2DLabelMapper::RenderOpaqueGeometry(vtkViewport *viewport,
         else // rendering string data
         {
           // If the user hasn't given us a custom format string then
-          // we'll sidestep a lot of sprintf nonsense.
+          // we'll sidestep a lot of snprintf nonsense.
           if (this->LabelFormat == NULL)
           {
             if( uStringData )

@@ -6,6 +6,8 @@ if(VTK_RENDERING_BACKEND STREQUAL "OpenGL2")
     TestCompositePolyDataMapper2CellScalars.cxx,NO_DATA
     TestCompositePolyDataMapper2MixedGeometryCellScalars.cxx,NO_DATA
     TestCompositePolyDataMapper2MixedGeometryEdges.cxx,NO_DATA
+    # composite glyphs are only supported on OpenGL2.
+    TestGlyph3DMapperTreeIndexingCompositeGlyphs.cxx,NO_DATA
     TestMultiBlockPartialArrayPointData.cxx
     TestMultiBlockPartialArrayFieldData.cxx
     # the following produce incorrect results in OpenGL
@@ -13,6 +15,7 @@ if(VTK_RENDERING_BACKEND STREQUAL "OpenGL2")
     TestTranslucentLUTTextureAlphaBlending.cxx
     TestAreaSelections.cxx
     TestValuePassFloatingPoint.cxx
+    TestToggleOSWithInteractor.cxx,NO_DATA
     )
 else()
   set(extra_opengl2_tests
@@ -22,6 +25,10 @@ else()
     TestCompositePolyDataMapper2MixedGeometryCellScalars.cxx,NO_DATA,NO_VALID
     TestCompositePolyDataMapper2MixedGeometryEdges.cxx,NO_DATA,NO_VALID
     )
+endif()
+
+if (VTK_USE_OFFSCREEN)
+  list(APPEND extra_opengl2_tests TestOffscreenIsOffscreen.cxx,NO_DATA,NO_VALID)
 endif()
 
 vtk_add_test_cxx(${vtk-module}CxxTests tests
@@ -52,9 +59,11 @@ vtk_add_test_cxx(${vtk-module}CxxTests tests
   TestGlyph3DMapper.cxx
   TestGlyph3DMapper2.cxx,NO_VALID,NO_RT,NO_DATA
   TestGlyph3DMapperArrow.cxx
+  TestGlyph3DMapperIndexing.cxx,NO_DATA
   TestGlyph3DMapperMasking.cxx
   TestGlyph3DMapperOrientationArray.cxx
   TestGlyph3DMapperPicking.cxx
+  TestGlyph3DMapperTreeIndexing.cxx,NO_DATA
   TestGradientBackground.cxx
   TestHiddenLineRemovalPass.cxx
   TestHomogeneousTransformOfActor.cxx

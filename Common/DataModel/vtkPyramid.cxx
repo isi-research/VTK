@@ -329,6 +329,7 @@ int vtkPyramid::CellBoundary(int vtkNotUsed(subId), double pcoords[3],
 //----------------------------------------------------------------------------
 // Marching pyramids (contouring)
 //
+namespace { //required so we don't violate ODR
 static int edges[8][2] = { {0,1}, {1,2}, {2,3},
                            {3,0}, {0,4}, {1,4},
                            {2,4}, {3,4} };
@@ -374,6 +375,7 @@ static TRIANGLE_CASES triCases[] = {
   {{ 4,  3,  0, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}}, //30
   {{-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1}}  //31
 };
+}
 
 //----------------------------------------------------------------------------
 void vtkPyramid::Contour(double value, vtkDataArray *cellScalars,
@@ -450,7 +452,10 @@ void vtkPyramid::Contour(double value, vtkDataArray *cellScalars,
     if ( pts[0] != pts[1] && pts[0] != pts[2] && pts[1] != pts[2] )
     {
       newCellId = offset + polys->InsertNextCell(3,pts);
-      outCd->CopyData(inCd,cellId,newCellId);
+      if (outCd)
+      {
+        outCd->CopyData(inCd, cellId, newCellId);
+      }
     }
   }
 }

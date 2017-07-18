@@ -42,7 +42,7 @@
 #define vtkShadowMapPass_h
 
 #include "vtkRenderingOpenGL2Module.h" // For export macro
-#include "vtkRenderPass.h"
+#include "vtkOpenGLRenderPass.h"
 #include <vector>  // STL Header
 #include <string> // For member variables.
 
@@ -57,25 +57,25 @@ class vtkShadowMapBakerPass;
 class vtkInformationObjectBaseKey;
 class vtkShaderProgram;
 
-class VTKRENDERINGOPENGL2_EXPORT vtkShadowMapPass : public vtkRenderPass
+class VTKRENDERINGOPENGL2_EXPORT vtkShadowMapPass : public vtkOpenGLRenderPass
 {
 public:
   static vtkShadowMapPass *New();
-  vtkTypeMacro(vtkShadowMapPass,vtkRenderPass);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  vtkTypeMacro(vtkShadowMapPass,vtkOpenGLRenderPass);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   /**
    * Perform rendering according to a render state \p s.
    * \pre s_exists: s!=0
    */
-  virtual void Render(const vtkRenderState *s);
+  void Render(const vtkRenderState *s) VTK_OVERRIDE;
 
   /**
    * Release graphics resources and ask components to release their own
    * resources.
    * \pre w_exists: w!=0
    */
-  void ReleaseGraphicsResources(vtkWindow *w);
+  void ReleaseGraphicsResources(vtkWindow *w) VTK_OVERRIDE;
 
   //@{
   /**
@@ -127,11 +127,20 @@ public:
   std::string GetFragmentImplementation() {
     return this->FragmentImplementation; }
 
-  /**
-   * A mapper can call this to set the uniforms that this
-   * pass uses
-   */
-  void SetUniforms(vtkShaderProgram *program);
+  // vtkOpenGLRenderPass virtuals:
+  bool PreReplaceShaderValues(std::string &vertexShader,
+                                   std::string &geometryShader,
+                                   std::string &fragmentShader,
+                                   vtkAbstractMapper *mapper,
+                                   vtkProp *prop) VTK_OVERRIDE;
+  bool PostReplaceShaderValues(std::string &vertexShader,
+                                   std::string &geometryShader,
+                                   std::string &fragmentShader,
+                                   vtkAbstractMapper *mapper,
+                                   vtkProp *prop) VTK_OVERRIDE;
+  bool SetShaderParameters(vtkShaderProgram *program,
+                          vtkAbstractMapper *mapper, vtkProp *prop,
+                          vtkOpenGLVertexArrayObject* VAO = NULL) VTK_OVERRIDE;
 
  protected:
   /**
@@ -142,7 +151,7 @@ public:
   /**
    * Destructor.
    */
-  virtual ~vtkShadowMapPass();
+  ~vtkShadowMapPass() VTK_OVERRIDE;
 
   /**
    * Check if shadow mapping is supported by the current OpenGL context.

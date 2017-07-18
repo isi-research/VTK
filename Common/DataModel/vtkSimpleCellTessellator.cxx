@@ -1300,8 +1300,6 @@ vtkSimpleCellTessellator::vtkSimpleCellTessellator()
   this->ScalarsCapacity = 0;
   this->PointOffset     = 0;
 
-  this->DataSet         = 0;
-
   this->FixedSubdivisions       = 0; // 0 means no fixed subdivision
   this->MaxSubdivisionLevel     = 0; // 0 means no subdivision at all
   this->CurrentSubdivisionLevel = 0;
@@ -1567,7 +1565,7 @@ void vtkSimpleCellTessellator::InsertEdgesIntoEdgeTable(vtkTriangleTile &tri )
         pcoords[2] = tri.GetVertex(l)[2] + alpha*(tri.GetVertex(r)[2] - tri.GetVertex(l)[2]);
 
         tri.SetVertex(j+3, pcoords);
-        // note we dont need to call SetEdgeParent() because
+        // note we don't need to call SetEdgeParent() because
         // if the edge is already in the hashtable it means that
         // it is already tessellated. All other point using this
         // edge will come from either inside the triangle either from

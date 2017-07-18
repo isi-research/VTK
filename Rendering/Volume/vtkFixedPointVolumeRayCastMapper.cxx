@@ -124,16 +124,10 @@ void vtkFixedPointVolumeRayCastMapperComputeCS1CGradients( T *dataPtr,
   z_limit = (int)(( (float)(thread_id + 1) / (float)thread_count ) *
                   dim[2] );
 
-  // Do final error checking on limits - make sure they are all within bounds
+  // Do sanity checking on limits - make sure they are all within bounds
   // of the scalar input
-
-  x_start = (x_start<0)?(0):(x_start);
-  y_start = (y_start<0)?(0):(y_start);
-  z_start = (z_start<0)?(0):(z_start);
-
-  x_limit = (x_limit>dim[0])?(dim[0]):(x_limit);
-  y_limit = (y_limit>dim[1])?(dim[1]):(y_limit);
-  z_limit = (z_limit>dim[2])?(dim[2]):(z_limit);
+  assert(z_start >= 0);
+  assert(z_limit <= dim[2]);
 
 
   int *dxBuffer = new int[dim[0]];
@@ -445,18 +439,6 @@ void vtkFixedPointVolumeRayCastMapperComputeGradients( T *dataPtr,
   y_limit = dim[1];
   z_start = 0;
   z_limit = dim[2];
-
-  // Do final error checking on limits - make sure they are all within bounds
-  // of the scalar input
-
-  x_start = (x_start<0)?(0):(x_start);
-  y_start = (y_start<0)?(0):(y_start);
-  z_start = (z_start<0)?(0):(z_start);
-
-  x_limit = (x_limit>dim[0])?(dim[0]):(x_limit);
-  y_limit = (y_limit>dim[1])?(dim[1]):(y_limit);
-  z_limit = (z_limit>dim[2])?(dim[2]):(z_limit);
-
 
   int increment = (independent)?(components):(1);
 
@@ -1480,11 +1462,10 @@ void vtkFixedPointVolumeRayCastMapper::Render( vtkRenderer *ren, vtkVolume *vol 
   if(this->GetBlendMode()!=vtkVolumeMapper::COMPOSITE_BLEND &&
      this->GetBlendMode()!=vtkVolumeMapper::MAXIMUM_INTENSITY_BLEND &&
      this->GetBlendMode()!=vtkVolumeMapper::MINIMUM_INTENSITY_BLEND &&
-     this->GetBlendMode()!=vtkVolumeMapper::AVERAGE_INTENSITY_BLEND &&
      this->GetBlendMode()!=vtkVolumeMapper::ADDITIVE_BLEND)
   {
     vtkErrorMacro(<< "Selected blend mode not supported. "
-                  << "Only Composite, MIP, MinIP, averageIP and additive modes "
+                  << "Only Composite, MIP, MinIP and additive modes "
                   << "are supported by the fixed point implementation.");
     return;
   }
@@ -1628,12 +1609,14 @@ void vtkFixedPointVolumeRayCastMapper::CreateCanonicalView( vtkVolume *vol,
 
   double bnds[6];
   vol->GetBounds(bnds);
+#if 0
   double d = sqrt((bnds[1]-bnds[0])*(bnds[1]-bnds[0]) +
                   (bnds[3]-bnds[2])*(bnds[3]-bnds[2]) +
                   (bnds[5]-bnds[4])*(bnds[5]-bnds[4]));
+#endif
 
   // For now use x distance - need to change this
-  d = bnds[1]-bnds[0];
+  double d = bnds[1]-bnds[0];
 
   // Set up the camera in parallel
   cam->SetFocalPoint( center );

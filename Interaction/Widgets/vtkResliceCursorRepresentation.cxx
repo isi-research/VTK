@@ -83,7 +83,7 @@ vtkResliceCursorRepresentation::vtkResliceCursorRepresentation()
   this->PlaneSource = vtkPlaneSource::New();
 
   this->ThicknessLabelFormat = new char[6];
-  sprintf(this->ThicknessLabelFormat,"%s","%0.3g");
+  snprintf(this->ThicknessLabelFormat,6,"%s","%0.3g");
 
   this->ResliceAxes        = vtkMatrix4x4::New();
   this->NewResliceAxes     = vtkMatrix4x4::New();
@@ -789,15 +789,19 @@ void vtkResliceCursorRepresentation::ManageTextDisplay()
   if ( this->ManipulationMode ==
        vtkResliceCursorRepresentation::WindowLevelling )
   {
-    sprintf(this->TextBuff,"Window, Level: ( %g, %g )",
-            this->CurrentWindow, this->CurrentLevel );
+    snprintf(this->TextBuff,
+             VTK_RESLICE_CURSOR_REPRESENTATION_MAX_TEXTBUFF,
+             "Window, Level: ( %g, %g )",
+             this->CurrentWindow, this->CurrentLevel );
   }
   else if (this->ManipulationMode ==
       vtkResliceCursorRepresentation::ResizeThickness )
   {
     // For now all the thickness' are the same anyway.
-    sprintf(this->TextBuff,"Reslice Thickness: %g mm",
-            this->GetResliceCursor()->GetThickness()[0] );
+    snprintf(this->TextBuff,
+             VTK_RESLICE_CURSOR_REPRESENTATION_MAX_TEXTBUFF,
+             "Reslice Thickness: %g mm",
+             this->GetResliceCursor()->GetThickness()[0] );
   }
 
   this->TextActor->SetInput(this->TextBuff);
@@ -819,7 +823,7 @@ vtkTextProperty* vtkResliceCursorRepresentation::GetTextProperty()
 //----------------------------------------------------------------------------
 void vtkResliceCursorRepresentation::GenerateText()
 {
-  sprintf(this->TextBuff,"NA");
+  snprintf(this->TextBuff, VTK_RESLICE_CURSOR_REPRESENTATION_MAX_TEXTBUFF, "NA");
   this->TextActor->SetInput(this->TextBuff);
   this->TextActor->SetTextScaleModeToNone();
 

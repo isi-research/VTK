@@ -33,7 +33,7 @@ public:
   static vtkImageFlip *New();
 
   vtkTypeMacro(vtkImageFlip,vtkImageReslice);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   //@{
   /**
@@ -86,9 +86,11 @@ public:
 
 protected:
   vtkImageFlip();
-  ~vtkImageFlip() {}
+  ~vtkImageFlip()VTK_OVERRIDE {}
 
-  virtual int RequestInformation(vtkInformation *, vtkInformationVector **, vtkInformationVector *);
+  int RequestInformation(vtkInformation *,
+                                 vtkInformationVector **,
+                                 vtkInformationVector *) VTK_OVERRIDE;
 
   int FilteredAxis;
   int FlipAboutOrigin;

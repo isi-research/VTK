@@ -39,14 +39,14 @@ public:
   /**
    * Is the given file a PNG file?
    */
-  virtual int CanReadFile(const char* fname);
+  int CanReadFile(const char* fname) VTK_OVERRIDE;
 
   /**
    * Get the file extensions for this format.
    * Returns a string with a space separated list of extensions in
    * the format .extension
    */
-  virtual const char* GetFileExtensions()
+  const char* GetFileExtensions() VTK_OVERRIDE
   {
       return ".png";
   }
@@ -54,7 +54,7 @@ public:
   /**
    * Return a descriptive name for the file format that might be useful in a GUI.
    */
-  virtual const char* GetDescriptiveName()
+  const char* GetDescriptiveName() VTK_OVERRIDE
   {
       return "PNG";
   }
@@ -81,12 +81,22 @@ public:
    */
   size_t GetNumberOfTextChunks();
 
+  //@{
+  /**
+   * Set/Get if data spacing should be calculated from the PNG file.
+   * Use default spacing if the PNG file don't have valid pixel per meter parameters.
+   * Default is false.
+   */
+  vtkSetMacro(ReadSpacingFromFile, bool);
+  vtkGetMacro(ReadSpacingFromFile, bool);
+  vtkBooleanMacro(ReadSpacingFromFile, bool);
+  //@}
 protected:
   vtkPNGReader();
-  ~vtkPNGReader();
+  ~vtkPNGReader() VTK_OVERRIDE;
 
-  virtual void ExecuteInformation();
-  virtual void ExecuteDataWithInformation(vtkDataObject *out, vtkInformation *outInfo);
+  void ExecuteInformation() VTK_OVERRIDE;
+  void ExecuteDataWithInformation(vtkDataObject *out, vtkInformation *outInfo) VTK_OVERRIDE;
   template <class OT>
     void vtkPNGReaderUpdate(vtkImageData *data, OT *outPtr);
   template <class OT>
@@ -100,5 +110,6 @@ private:
 
   class vtkInternals;
   vtkInternals* Internals;
+  bool ReadSpacingFromFile;
 };
 #endif

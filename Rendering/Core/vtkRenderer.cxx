@@ -36,10 +36,13 @@
 #include "vtkPropCollection.h"
 #include "vtkRendererDelegate.h"
 #include "vtkRenderPass.h"
+#include "vtkRenderTimerLog.h"
 #include "vtkRenderWindow.h"
 #include "vtkTimerLog.h"
 #include "vtkVolume.h"
 #include "vtkTexture.h"
+
+#include <sstream>
 
 vtkCxxSetObjectMacro(vtkRenderer, Information, vtkInformation);
 vtkCxxSetObjectMacro(vtkRenderer, Delegate, vtkRendererDelegate);
@@ -127,6 +130,7 @@ vtkRenderer::vtkRenderer()
   this->UseHiddenLineRemoval = 0;
 
   this->UseDepthPeeling=0;
+  this->UseDepthPeelingForVolumes = false;
   this->OcclusionRatio=0.0;
   this->MaximumNumberOfPeels=4;
   this->LastRenderingUsedDepthPeeling=0;
@@ -210,6 +214,10 @@ void vtkRenderer::ReleaseGraphicsResources(vtkWindow *renWin)
 // Concrete render method.
 void vtkRenderer::Render(void)
 {
+  vtkRenderTimerLog *timer = this->RenderWindow->GetRenderTimer();
+  VTK_SCOPED_RENDER_EVENT("vtkRenderer::Render this=@" << std::hex << this
+                          << " Layer=" << std::dec << this->Layer, timer);
+
   if(this->Delegate!=0 && this->Delegate->GetUsed())
   {
       this->Delegate->Render(this);
@@ -294,6 +302,8 @@ void vtkRenderer::Render(void)
     }
   }
 
+  timer->MarkStartEvent("Culling props");
+
   // Create the initial list of visible props
   // This will be passed through AllocateTime(), where
   // a time is allocated for each prop, and the list
@@ -334,8 +344,12 @@ void vtkRenderer::Render(void)
     this->AllocateTime();
   }
 
+  timer->MarkEndEvent(); // culling
+
   // do the render library specific stuff
+  timer->MarkStartEvent("DeviceRender");
   this->DeviceRender();
+  timer->MarkEndEvent();
 
   // If we aborted, restore old estimated times
   // Setting the allocated render time to zero also sets the
@@ -427,6 +441,9 @@ double vtkRenderer::GetTimeFactor()
 // Ask active camera to load its view matrix.
 int vtkRenderer::UpdateCamera ()
 {
+  VTK_SCOPED_RENDER_EVENT("vtkRenderer::UpdateCamera",
+                          this->RenderWindow->GetRenderTimer());
+
   if (!this->ActiveCamera)
   {
     vtkDebugMacro(<< "No cameras are on, creating one.");
@@ -487,6 +504,9 @@ int vtkRenderer::UpdateLightsGeometryToFollowCamera()
 
 int vtkRenderer::UpdateLightGeometry()
 {
+  VTK_SCOPED_RENDER_EVENT("vtkRenderer::UpdateLightGeometry",
+                          this->GetRenderWindow()->GetRenderTimer());
+
   if (this->LightFollowCamera)
   {
     // only update the light's geometry if this Renderer is tracking
@@ -604,7 +624,7 @@ int vtkRenderer::UpdateGeometry()
 
   // do the render library specific stuff about translucent polygonal geometry.
   // As it can be expensive, do a quick check if we can skip this step
-  int hasTranslucentPolygonalGeometry=0;
+  int hasTranslucentPolygonalGeometry = this->UseDepthPeelingForVolumes;
   for ( i = 0; !hasTranslucentPolygonalGeometry && i < this->PropArrayCount;
         i++ )
   {
@@ -618,10 +638,13 @@ int vtkRenderer::UpdateGeometry()
 
   // loop through props and give them a chance to
   // render themselves as volumetric geometry.
-  for ( i = 0; i < this->PropArrayCount; i++ )
+  if (hasTranslucentPolygonalGeometry == 0 || !this->UseDepthPeelingForVolumes)
   {
-    this->NumberOfPropsRendered +=
-      this->PropArray[i]->RenderVolumetricGeometry(this);
+    for ( i = 0; i < this->PropArrayCount; i++ )
+    {
+      this->NumberOfPropsRendered +=
+          this->PropArray[i]->RenderVolumetricGeometry(this);
+    }
   }
 
   // loop through props and give them a chance to
@@ -896,9 +919,9 @@ void vtkRenderer::CreateLight(void)
 // Compute the bounds of the visible props
 void vtkRenderer::ComputeVisiblePropBounds( double allBounds[6] )
 {
-  vtkProp    *prop;
-  double      *bounds;
-  int        nothingVisible=1;
+  vtkProp      *prop;
+  const double *bounds;
+  int          nothingVisible=1;
 
   this->InvokeEvent(vtkCommand::ComputeVisiblePropBoundsEvent, this);
 

@@ -16,9 +16,11 @@ try:
 except ImportError:
     print("Numpy (http://numpy.scipy.org) not found.")
     print("This test requires numpy!")
-    sys.exit(0)
+    from vtk.test import Testing
+    Testing.skip()
 
 from vtk.util.numpy_support import numpy_to_vtk, vtk_to_numpy
+import vtk.numpy_interface.dataset_adapter as dsa
 
 
 class TestNumpySupport(Testing.vtkTest):
@@ -117,6 +119,21 @@ class TestNumpySupport(Testing.vtkTest):
         a.shape = (10, 10)
         x = a[::2,::2]
         self.assertRaises(AssertionError, numpy_to_vtk, x)
+
+    def testNumpyReduce(self):
+        "Test that reducing methods return scalars."
+        vtk_array = vtk.vtkLongArray()
+        for i in range(0, 10):
+            vtk_array.InsertNextValue(i)
+
+        numpy_vtk_array = dsa.vtkDataArrayToVTKArray(vtk_array)
+        s = numpy_vtk_array.sum()
+        self.assertEqual(s, 45)
+        self.assertTrue(isinstance(s, numpy.signedinteger))
+
+        m = numpy_vtk_array.mean()
+        self.assertEqual(m, 4.5)
+        self.assertTrue(isinstance(m, numpy.floating))
 
 if __name__ == "__main__":
     Testing.main([(TestNumpySupport, 'test')])

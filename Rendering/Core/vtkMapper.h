@@ -86,7 +86,7 @@ class VTKRENDERINGCORE_EXPORT vtkMapper : public vtkAbstractMapper3D
 {
 public:
   vtkTypeMacro(vtkMapper, vtkAbstractMapper3D);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   /**
    * Make a shallow copy of this mapper.
@@ -97,7 +97,7 @@ public:
    * Overload standard modified time function. If lookup table is modified,
    * then this object is modified as well.
    */
-  vtkMTimeType GetMTime();
+  vtkMTimeType GetMTime() VTK_OVERRIDE;
 
   /**
    * Method initiates the mapping process. Generally sent by the actor
@@ -110,7 +110,7 @@ public:
    * The parameter window could be used to determine which graphic
    * resources to release.
    */
-  virtual void ReleaseGraphicsResources(vtkWindow *) {}
+  void ReleaseGraphicsResources(vtkWindow *) VTK_OVERRIDE {}
 
   //@{
   /**
@@ -327,12 +327,16 @@ public:
   //@}
 
   /**
-   * Get the array name or number and component to color by.
+   * Set/Get the array name or number and component to color by.
    */
-  char* GetArrayName() { return this->ArrayName; }
-  int GetArrayId() { return this->ArrayId; }
-  int GetArrayAccessMode() { return this->ArrayAccessMode; }
-  int GetArrayComponent() { return this->ArrayComponent; }
+  vtkGetStringMacro(ArrayName);
+  vtkSetStringMacro(ArrayName);
+  vtkGetMacro(ArrayId, int);
+  vtkSetMacro(ArrayId, int);
+  vtkGetMacro(ArrayAccessMode, int);
+  vtkSetMacro(ArrayAccessMode, int);
+  vtkGetMacro(ArrayComponent, int);
+  vtkSetMacro(ArrayComponent, int);
 
   /**
    * Return the method for obtaining scalar data.
@@ -432,7 +436,7 @@ public:
 
   //@{
   /**
-   * Get the net paramters for handlig coincident topology
+   * Get the net parameters for handling coincident topology
    * obtained by summing the global values with the relative values.
    */
   void GetCoincidentTopologyPolygonOffsetParameters(
@@ -467,8 +471,8 @@ public:
    * Return bounding box (array of six doubles) of data expressed as
    * (xmin,xmax, ymin,ymax, zmin,zmax).
    */
-  virtual double *GetBounds();
-  virtual void GetBounds(double bounds[6])
+  double *GetBounds() VTK_OVERRIDE;
+  void GetBounds(double bounds[6]) VTK_OVERRIDE
     { this->vtkAbstractMapper3D::GetBounds(bounds); }
 
   /**
@@ -562,42 +566,6 @@ public:
    */
   virtual int CanUseTextureMapForColoring(vtkDataObject* input);
 
-  //@{
-  /**
-   * Used internally by vtkValuePass
-   */
-  void UseInvertibleColorFor(vtkDataObject *input,
-    int scalarMode,
-    int arrayAccessMode,
-    int arrayId,
-    const char *arrayName,
-    int arrayComponent,
-    double *scalarRange);
-  void UseInvertibleColorFor(int scalarMode,
-    int arrayAccessMode,
-    int arrayId,
-    const char *arrayName,
-    int arrayComponent,
-    double *scalarRange);
-  //@}
-
-  /**
-   * Used internally by vtkValuePass.
-   */
-  void ClearInvertibleColor();
-
-  /**
-   * Convert a floating point value to an RGB triplet.
-   */
-  static void ValueToColor(double value, double min, double scale,
-    unsigned char *color);
-
-  /**
-   * Convert an RGB triplet to a floating point value.
-   */
-  static void ColorToValue(unsigned char *color, double min, double scale,
-    double &value);
-
   /**
    * Call to force a rebuild of color result arrays on next MapScalars.
    * Necessary when using arrays in the case of multiblock data.
@@ -621,7 +589,7 @@ public:
 
 protected:
   vtkMapper();
-  ~vtkMapper();
+  ~vtkMapper() VTK_OVERRIDE;
 
   // color mapped colors
   vtkUnsignedCharArray *Colors;
@@ -633,11 +601,6 @@ protected:
   // 1D ColorMap used for the texture image.
   vtkImageData* ColorTextureMap;
   void MapScalarsToTexture(vtkAbstractArray* scalars, double alpha);
-
-  // Makes a lookup table that can be used for deferred colormaps
-  void AcquireInvertibleLookupTable();
-  bool UseInvertibleColors;
-  static vtkScalarsToColors *InvertibleLookupTable;
 
   vtkScalarsToColors *LookupTable;
   int ScalarVisibility;
@@ -653,7 +616,7 @@ protected:
 
   // for coloring by a component of a field data array
   int ArrayId;
-  char ArrayName[256];
+  char* ArrayName;
   int ArrayComponent;
   int ArrayAccessMode;
 
@@ -664,8 +627,6 @@ protected:
   int Static;
 
   int ForceCompileOnly;
-
-  vtkAbstractArray *InvertibleScalars;
 
   double CoincidentPolygonFactor;
   double CoincidentPolygonOffset;

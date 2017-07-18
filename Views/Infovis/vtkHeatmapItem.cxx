@@ -469,7 +469,7 @@ void vtkHeatmapItem::PaintBuffers(vtkContext2D *painter)
     currentlyCollapsingRows = false;
 
     // get the name of this row
-    std::string name = "";
+    std::string name;
     if (this->RowNames)
     {
       name = this->RowNames->GetValue(row);
@@ -608,7 +608,7 @@ void vtkHeatmapItem::PaintBuffers(vtkContext2D *painter)
         break;
     }
 
-    if (name != "" &&
+    if (!name.empty() &&
         this->SceneBottomLeft[0] < labelStartX &&
         this->SceneTopRight[0] > labelStartX   &&
         this->SceneBottomLeft[1] < labelStartY &&
@@ -1118,7 +1118,7 @@ void vtkHeatmapItem::GetBounds(double bounds[4])
 }
 
 //-----------------------------------------------------------------------------
-void vtkHeatmapItem::MarkRowAsBlank(std::string rowName)
+void vtkHeatmapItem::MarkRowAsBlank(const std::string& rowName)
 {
   this->BlankRows.insert(rowName);
 }

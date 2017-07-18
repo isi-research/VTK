@@ -39,7 +39,7 @@ class VTKIMAGINGCORE_EXPORT vtkImageClip : public vtkImageAlgorithm
 public:
   static vtkImageClip *New();
   vtkTypeMacro(vtkImageClip,vtkImageAlgorithm);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   //@{
   /**
@@ -67,7 +67,7 @@ public:
 
 protected:
   vtkImageClip();
-  ~vtkImageClip() {}
+  ~vtkImageClip() VTK_OVERRIDE {}
 
   // Time when OutputImageExtent was computed.
   vtkTimeStamp CTime;
@@ -76,15 +76,15 @@ protected:
 
   int ClipData;
 
-  virtual int RequestInformation (vtkInformation *,
+  int RequestInformation (vtkInformation *,
                                   vtkInformationVector **,
-                                  vtkInformationVector *);
+                                  vtkInformationVector *) VTK_OVERRIDE;
 
   void CopyData(vtkImageData *inData, vtkImageData *outData, int *ext);
 
-  virtual int RequestData(vtkInformation *,
+  int RequestData(vtkInformation *,
                           vtkInformationVector **,
-                          vtkInformationVector *);
+                          vtkInformationVector *) VTK_OVERRIDE;
 
 private:
   vtkImageClip(const vtkImageClip&) VTK_DELETE_FUNCTION;

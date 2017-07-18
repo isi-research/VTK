@@ -676,7 +676,7 @@ void vtkEnzoReaderInternal::ReadBlockStructures()
 
   int     levlId = 0;
   int     parent = 0;
-  std::string   theStr = "";
+  std::string   theStr;
 
   while ( stream )
   {
@@ -904,7 +904,7 @@ void vtkEnzoReaderInternal::ReadGeneralParameters()
     return;
   }
 
-  std::string tmpStr( "" );
+  std::string tmpStr;
   while ( stream )
   {
     stream >> tmpStr;
@@ -1159,7 +1159,7 @@ void vtkEnzoReaderInternal::CheckAttributeNames()
     for ( std::vector < std::string >::iterator
           stringIt  = this->BlockAttributeNames.begin();
           stringIt != this->BlockAttributeNames.end();
-          stringIt ++
+          ++stringIt
         )
     {
       if (  ( *stringIt )  ==  toRemove[i]  )
@@ -1176,7 +1176,7 @@ void vtkEnzoReaderInternal::CheckAttributeNames()
     for ( std::vector < std::string >::iterator
           stringIt  = this->BlockAttributeNames.begin();
           stringIt != this->BlockAttributeNames.end();
-          stringIt ++
+          ++stringIt
         )
     {
       if (  ( *stringIt )  ==  toExport[i]  )

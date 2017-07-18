@@ -129,12 +129,12 @@ namespace
           if(this->NumPoints > this->NumDesiredPoints)
           {
             it=this->dist2ToIds.end();
-            it--;
+            --it;
             if((this->NumPoints-it->second.size()) > this->NumDesiredPoints)
             {
               this->NumPoints -= it->second.size();
               std::map<float, std::list<vtkIdType> >::iterator it2 = it;
-              it2--;
+              --it2;
               this->LargestDist2 = it2->first;
               this->dist2ToIds.erase(it);
             }
@@ -144,8 +144,9 @@ namespace
     void GetSortedIds(vtkIdList* ids)
     {
         ids->Reset();
-        vtkIdType numIds = (this->NumDesiredPoints < this->NumPoints)
-          ? this->NumDesiredPoints : this->NumPoints;
+        vtkIdType numIds = static_cast<vtkIdType>(
+          (this->NumDesiredPoints < this->NumPoints)
+            ? this->NumDesiredPoints : this->NumPoints);
         ids->SetNumberOfIds(numIds);
         vtkIdType counter = 0;
         std::map<float, std::list<vtkIdType> >::iterator it=this->dist2ToIds.begin();
@@ -156,9 +157,9 @@ namespace
           {
             ids->InsertId(counter, *lit);
             counter++;
-            lit++;
+            ++lit;
           }
-          it++;
+          ++it;
         }
     }
 
@@ -293,8 +294,6 @@ void vtkKdTree::DeleteCellLists()
   }
 
   this->InitializeCellLists();
-
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -551,8 +550,6 @@ void vtkKdTree::GetRegionsAtLevel(int level, vtkKdNode **nodes)
   }
 
   vtkKdTree::_GetRegionsAtLevel(level, nodes, this->Top);
-
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -569,7 +566,6 @@ void vtkKdTree::GetLeafNodeIds(vtkKdNode *node, vtkIntArray *ids)
   {
     ids->InsertNextValue(id);
   }
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -729,8 +725,6 @@ void vtkKdTree::ComputeCellCenter(vtkDataSet *set, int cellId, double *center)
   this->ComputeCellCenter(set->GetCell(cellId), center, weights);
 
   delete [] weights;
-
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -742,8 +736,6 @@ void vtkKdTree::ComputeCellCenter(vtkCell *cell, double *center,
   int subId = cell->GetParametricCenter(pcoords);
 
   cell->EvaluateLocation(subId, pcoords, center, weights);
-
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -916,7 +908,6 @@ void vtkKdTree::BuildLocator()
   this->SetCalculator(this->Top);
 
   this->UpdateProgress(1.0);
-  return;
 }
 
 int vtkKdTree::ProcessUserDefinedCuts(double *minBounds)
@@ -1609,8 +1600,6 @@ void vtkKdTree::SelfRegister(vtkKdNode *kd)
     this->SelfRegister(kd->GetLeft());
     this->SelfRegister(kd->GetRight());
   }
-
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -3552,14 +3541,12 @@ int vtkKdTree::findRegion(vtkKdNode *node, double x, double y, double z)
 void vtkKdTree::CreateCellLists()
 {
   this->CreateCellLists(static_cast<int *>(NULL), 0);
-  return;
 }
 
 //----------------------------------------------------------------------------
 void vtkKdTree::CreateCellLists(int *regionList, int listSize)
 {
   this->CreateCellLists(this->GetDataSet(), regionList, listSize);
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -3573,7 +3560,6 @@ void vtkKdTree::CreateCellLists(int dataSetIndex, int *regionList, int listSize)
   }
 
   this->CreateCellLists(dataSet, regionList, listSize);
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -4282,7 +4268,8 @@ int vtkKdTree::ViewOrderRegionsInDirection(
     if (ids.size() < static_cast<unsigned int>(this->NumberOfRegions))
     {
       IdsOfInterest = vtkIntArray::New();
-      IdsOfInterest->SetNumberOfValues(ids.size());
+      IdsOfInterest->SetNumberOfValues(
+        static_cast<vtkIdType>(ids.size()));
 
       for (it = ids.begin(), i=0; it != ids.end(); ++it, ++i)
       {
@@ -4337,7 +4324,7 @@ int vtkKdTree::ViewOrderRegionsFromPosition(vtkIntArray *regionIds,
     if (ids.size() < static_cast<unsigned int>(this->NumberOfRegions))
     {
       IdsOfInterest = vtkIntArray::New();
-      IdsOfInterest->SetNumberOfValues(ids.size());
+      IdsOfInterest->SetNumberOfValues(static_cast<vtkIdType>(ids.size()));
 
       for (it = ids.begin(), i=0; it != ids.end(); ++it, ++i)
       {

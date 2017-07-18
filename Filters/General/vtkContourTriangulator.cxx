@@ -652,7 +652,7 @@ void vtkCCSMakePolysFromLines(
           }
         }
 
-        if (matches.size() > 0)
+        if (!matches.empty())
         {
           // Multiple matches mean we need to decide which path to take
           if (matches.size() > 1)
@@ -1010,7 +1010,7 @@ int vtkCCSSplitAtPinchPoints(
       // Unless polygroup was clear (because poly was reversed),
       // make a group with one entry for the new poly
       polyGroups.resize(polys.size());
-      if (polyGroups[i].size())
+      if (!polyGroups[i].empty())
       {
         polyGroups[polys.size()-1].push_back(polys.size()-1);
       }
@@ -1662,7 +1662,7 @@ void vtkCCSMakeHoleyPolys(
       if (groupCount[ll] == 0) { outerPolyStack.push_back(ll); }
     }
 
-    while (outerPolyStack.size())
+    while (!outerPolyStack.empty())
     {
       size_t j = outerPolyStack.back();
       outerPolyStack.pop_back();
@@ -2116,7 +2116,9 @@ int vtkCCSFindCuts(
 
         // This check is done for both cuts
         if (vtkCCSCheckCut(polys, points, normal, polyGroup,
-                           outerPolyId, innerPolyId, k, j))
+                           outerPolyId, innerPolyId,
+                           static_cast<vtkIdType>(k),
+                           static_cast<vtkIdType>(j)))
         {
           cuts[cutId][0] = k;
           cuts[cutId][1] = j;
@@ -2296,7 +2298,7 @@ int vtkCCSCutHoleyPolys(
 
       if (madeCut)
       {
-        // Move successfuly cut innerPolyId into its own group
+        // Move successfully cut innerPolyId into its own group
         polyGroup.erase(polyGroup.begin() + inner);
         polyGroups[innerPolyId].push_back(innerPolyId);
       }
@@ -2486,7 +2488,7 @@ int vtkContourTriangulator::TriangulateContours(
   for (size_t polyId = 0; polyId < polyGroups.size(); polyId++)
   {
     // If group is empty, then poly was a hole without a containing poly
-    if (polyGroups[polyId].size() == 0)
+    if (polyGroups[polyId].empty())
     {
       continue;
     }

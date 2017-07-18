@@ -116,7 +116,7 @@ bool vtkPlotParallelCoordinates::Paint(vtkContext2D *painter)
 
   painter->ApplyPen(this->Pen);
 
-  if (this->Storage->size() == 0)
+  if (this->Storage->empty())
   {
     return false;
   }
@@ -163,7 +163,7 @@ bool vtkPlotParallelCoordinates::Paint(vtkContext2D *painter)
       {
         line[j].Set(this->Storage->AxisPos[j], (*this->Storage)[j][i]);
       }
-      painter->GetPen()->SetColor(this->Colors->GetPointer(nc));
+      painter->GetPen()->SetColor(this->Colors->GetPointer(static_cast<vtkIdType>(nc)));
       painter->DrawPoly(line[0].GetData(), static_cast<int>(cols));
     }
   }
@@ -252,7 +252,7 @@ bool vtkPlotParallelCoordinates::SetSelectionRange(int axis, float low,
       if (col[i] >= low && col[i] <= high)
       {
         // Remove this point - no longer selected
-        this->Selection->InsertNextValue(i);
+        this->Selection->InsertNextValue(static_cast<vtkIdType>(i));
       }
     }
     this->Storage->SelectionInitialized = true;
@@ -391,6 +391,11 @@ bool vtkPlotParallelCoordinates::UpdateTableCache(vtkTable *table)
     vtkDataArray* c =
       vtkArrayDownCast<vtkDataArray>(table->GetColumnByName(this->ColorArrayName));
     // TODO: Should add support for categorical coloring & try enum lookup
+    if (this->Colors)
+    {
+      this->Colors->UnRegister(this);
+      this->Colors = 0;
+    }
     if (c)
     {
       if (!this->LookupTable)
@@ -401,11 +406,6 @@ bool vtkPlotParallelCoordinates::UpdateTableCache(vtkTable *table)
       // Consistent register and unregisters
       this->Colors->Register(this);
       this->Colors->Delete();
-    }
-    else
-    {
-      this->Colors->UnRegister(this);
-      this->Colors = 0;
     }
   }
 
@@ -479,7 +479,6 @@ void vtkPlotParallelCoordinates::SelectColorArray(const vtkStdString &arrayName)
   vtkDebugMacro(<< "SelectColorArray called with invalid column name.");
   this->ColorArrayName = "";
   this->Modified();
-  return;
 }
 
 //-----------------------------------------------------------------------------

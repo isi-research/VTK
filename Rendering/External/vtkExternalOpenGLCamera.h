@@ -39,7 +39,7 @@ public:
   /**
    * Implement base class method.
    */
-  void Render(vtkRenderer *ren);
+  void Render(vtkRenderer *ren) VTK_OVERRIDE;
 
   /**
    * Set the view transform matrix
@@ -53,24 +53,15 @@ public:
 
 protected:
   vtkExternalOpenGLCamera();
-  ~vtkExternalOpenGLCamera() {}
-
-  /**
-   * These methods should only be used within vtkCamera.cxx.
-   * Bypass computation if user provided the projection transform
-   */
-  void ComputeProjectionTransform(double aspect,
-                                  double nearz,
-                                  double farz);
+  ~vtkExternalOpenGLCamera() VTK_OVERRIDE {}
 
   /**
    * These methods should only be used within vtkCamera.cxx.
    * Bypass computation if user provided the view transform
    */
-  void ComputeViewTransform();
+  void ComputeViewTransform() VTK_OVERRIDE;
 
 private:
-  bool UserProvidedProjectionTransform;
   bool UserProvidedViewTransform;
 
   vtkExternalOpenGLCamera(const vtkExternalOpenGLCamera&) VTK_DELETE_FUNCTION;

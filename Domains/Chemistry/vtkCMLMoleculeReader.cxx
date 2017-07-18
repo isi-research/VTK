@@ -179,8 +179,6 @@ void vtkCMLParser::StartElement(const char *name, const char **attr)
     }
     vtkDebugMacro(<<desc);
   }
-
-  return;
 }
 
 void vtkCMLParser::EndElement(const char *)
@@ -277,7 +275,7 @@ void vtkCMLParser::NewBond(const char **attr)
         if (!found)
         {
           // Create list of known atom names:
-          std::string allAtomNames ("");
+          std::string allAtomNames;
           for (size_t i = 0; i < this->AtomNames.size(); ++i)
           {
             allAtomNames += this->AtomNames[i];

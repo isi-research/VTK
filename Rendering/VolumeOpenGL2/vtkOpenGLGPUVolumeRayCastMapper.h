@@ -16,15 +16,17 @@
 #ifndef vtkOpenGLGPUVolumeRayCastMapper_h
 #define vtkOpenGLGPUVolumeRayCastMapper_h
 
+#include "vtkNew.h"                          // For vtkNew
 #include "vtkRenderingVolumeOpenGL2Module.h" // For export macro
-
-#include <vtkGPUVolumeRayCastMapper.h>
+#include "vtkGPUVolumeRayCastMapper.h"
 
 // Forward declarations
+class vtkGenericOpenGLResourceFreeCallback;
+class vtkImplicitFunction;
 class vtkOpenGLCamera;
 class vtkShaderProgram;
 class vtkTextureObject;
-class vtkGenericOpenGLResourceFreeCallback;
+class vtkVolumeTexture;
 
 //----------------------------------------------------------------------------
 class VTKRENDERINGVOLUMEOPENGL2_EXPORT vtkOpenGLGPUVolumeRayCastMapper :
@@ -40,7 +42,7 @@ public:
   };
 
   vtkTypeMacro(vtkOpenGLGPUVolumeRayCastMapper, vtkGPUVolumeRayCastMapper);
-  void PrintSelf( ostream& os, vtkIndent indent );
+  void PrintSelf( ostream& os, vtkIndent indent ) VTK_OVERRIDE;
 
   // Description:
   // Low level API to enable access to depth texture in
@@ -59,12 +61,12 @@ public:
   // Description:
   // Low level API to export the depth texture as vtkImageData in
   // RenderToImage mode.
-  void GetDepthImage(vtkImageData* im);
+  void GetDepthImage(vtkImageData* im) VTK_OVERRIDE;
 
   // Description:
   // Low level API to export the color texture as vtkImageData in
   // RenderToImage mode.
-  void GetColorImage(vtkImageData* im);
+  void GetColorImage(vtkImageData* im) VTK_OVERRIDE;
 
   // Description:
   // Mapper can have multiple passes and internally it will set
@@ -73,14 +75,42 @@ public:
   // the user.
   vtkGetMacro(CurrentPass, int);
 
+  //@{
+  /**
+   * Sets a user defined function to generate the ray jittering noise.
+   * vtkPerlinNoise is used by default with a texture size equivlent to
+   * the window size. These settings will have no effect when UseJittering
+   * is Off.
+   */
+  void SetNoiseGenerator(vtkImplicitFunction* generator);
+  vtkSetVector2Macro(NoiseTextureSize, int);
+  //@}
+
+  /**
+   * Set a fixed number of partitions in which to split the volume
+   * during rendring. This will force by-block rendering without
+   * trying to compute an optimum number of partitions.
+   */
+  void SetPartitions(unsigned short x, unsigned short y, unsigned short z);
+
+  /**
+   *  Load the volume texture into GPU memory.  Actual loading occurs
+   *  in vtkVolumeTexture::LoadVolume.  The mapper by default loads data
+   *  lazily (at render time), so it is most commonly not necessary to call
+   *  this function.  This method is only exposed in order to support on-site
+   *  loading which is useful in cases where the user needs to know a-priori
+   *  whether loading will succeed  or not.
+   */
+  bool PreLoadData(vtkRenderer* ren, vtkVolume* vol);
+
 protected:
   vtkOpenGLGPUVolumeRayCastMapper();
-  ~vtkOpenGLGPUVolumeRayCastMapper();
+  ~vtkOpenGLGPUVolumeRayCastMapper() VTK_OVERRIDE;
 
   // Description:
   // Delete OpenGL objects.
   // \post done: this->OpenGLObjectsCreated==0
-  virtual void ReleaseGraphicsResources(vtkWindow *window);
+  void ReleaseGraphicsResources(vtkWindow *window) VTK_OVERRIDE;
   vtkGenericOpenGLResourceFreeCallback *ResourceCallback;
 
   // Description:
@@ -95,30 +125,29 @@ protected:
 
   // TODO Take these out as these are no longer needed
   // Methods called by the AMR Volume Mapper.
-  virtual void PreRender(vtkRenderer * vtkNotUsed(ren),
+  void PreRender(vtkRenderer * vtkNotUsed(ren),
                          vtkVolume *vtkNotUsed(vol),
                          double vtkNotUsed(datasetBounds)[6],
                          double vtkNotUsed(scalarRange)[2],
                          int vtkNotUsed(noOfComponents),
-                         unsigned int vtkNotUsed(numberOfLevels)) {};
+                         unsigned int vtkNotUsed(numberOfLevels)) VTK_OVERRIDE {};
 
   // \pre input is up-to-date
-  virtual void RenderBlock(vtkRenderer *vtkNotUsed(ren),
+  void RenderBlock(vtkRenderer *vtkNotUsed(ren),
                            vtkVolume *vtkNotUsed(vol),
-                           unsigned int vtkNotUsed(level)) {}
+                           unsigned int vtkNotUsed(level)) VTK_OVERRIDE {}
 
-  virtual void PostRender(vtkRenderer *vtkNotUsed(ren),
-                          int vtkNotUsed(noOfComponents)) {}
+  void PostRender(vtkRenderer *vtkNotUsed(ren),
+                          int vtkNotUsed(noOfComponents)) VTK_OVERRIDE {}
 
   // Description:
   // Rendering volume on GPU
-  void GPURender(vtkRenderer *ren, vtkVolume *vol);
+  void GPURender(vtkRenderer *ren, vtkVolume *vol) VTK_OVERRIDE;
 
   // Description:
   // Method that performs the actual rendering given a volume and a shader
   void DoGPURender(vtkRenderer* ren,
                    vtkVolume* vol,
-                   vtkImageData* input,
                    vtkOpenGLCamera* cam,
                    vtkShaderProgram* shaderProgram,
                    int noOfComponents,
@@ -137,7 +166,7 @@ protected:
 
   // Description:
   // Empty implementation.
-  void GetReductionRatio(double* ratio)
+  void GetReductionRatio(double* ratio) VTK_OVERRIDE
   {
     ratio[0] = ratio[1] = ratio[2] = 1.0;
   }
@@ -145,11 +174,35 @@ protected:
 
   // Description:
   // Empty implementation.
-  virtual int IsRenderSupported(vtkRenderWindow *vtkNotUsed(window),
-                                vtkVolumeProperty *vtkNotUsed(property))
+  int IsRenderSupported(vtkRenderWindow *vtkNotUsed(window),
+                                vtkVolumeProperty *vtkNotUsed(property)) VTK_OVERRIDE
   {
     return 1;
   }
+
+  //@{
+  /**
+   *  \brief vtkOpenGLRenderPass API
+   */
+  vtkMTimeType GetRenderPassStageMTime(vtkVolume* vol);
+
+  /**
+   *  RenderPass string replacements on shader templates.
+   */
+  void ReplaceShaderRenderPass(std::string& vertShader, std::string& fragShader,
+    vtkVolume* vol, bool prePass);
+
+  /**
+   *  Update parameters from RenderPass
+   */
+  void SetShaderParametersRenderPass(vtkVolume* vol);
+  /**
+   *  Caches the vtkOpenGLRenderPass::RenderPasses() information.
+   *  Note: Do not dereference the pointers held by this object. There is no
+   *  guarantee that they are still valid!
+   */
+  vtkNew<vtkInformation> LastRenderPassInfo;
+  //@}
 
   double ReductionFactor;
   int    CurrentPass;
@@ -157,6 +210,12 @@ protected:
 private:
   class vtkInternal;
   vtkInternal* Impl;
+
+  friend class vtkVolumeTexture;
+  vtkVolumeTexture* VolumeTexture;
+
+  vtkImplicitFunction* NoiseGenerator;
+  int NoiseTextureSize[2];
 
   vtkOpenGLGPUVolumeRayCastMapper(
     const vtkOpenGLGPUVolumeRayCastMapper&) VTK_DELETE_FUNCTION;

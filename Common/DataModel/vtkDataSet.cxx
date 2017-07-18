@@ -523,7 +523,7 @@ void vtkDataSet::GenerateGhostArray(int zeroExt[6], bool cellOnly)
       ghostPoints.TakeReference(vtkUnsignedCharArray::New());
       ghostPoints->SetName(vtkDataSetAttributes::GhostArrayName());
       ghostPoints->SetNumberOfTuples(vtkStructuredData::GetNumberOfPoints(extent));
-      ghostPoints->FillComponent(0, 0);
+      ghostPoints->FillValue(0);
       this->PointData->AddArray(ghostPoints);
     }
 
@@ -593,7 +593,7 @@ void vtkDataSet::GenerateGhostArray(int zeroExt[6], bool cellOnly)
     ghostCells.TakeReference(vtkUnsignedCharArray::New());
     ghostCells->SetName(vtkDataSetAttributes::GhostArrayName());
     ghostCells->SetNumberOfTuples(vtkStructuredData::GetNumberOfCells(extent));
-    ghostCells->FillComponent(0, 0);
+    ghostCells->FillValue(0);
     this->CellData->AddArray(ghostCells);
   }
 
@@ -716,8 +716,6 @@ void vtkDataSet::PrintSelf(ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os,indent);
 
-  double *bounds;
-
   os << indent << "Number Of Points: " << this->GetNumberOfPoints() << "\n";
   os << indent << "Number Of Cells: " << this->GetNumberOfCells() << "\n";
 
@@ -727,7 +725,7 @@ void vtkDataSet::PrintSelf(ostream& os, vtkIndent indent)
   os << indent << "Point Data:\n";
   this->PointData->PrintSelf(os,indent.GetNextIndent());
 
-  bounds = this->GetBounds();
+  const double *bounds = this->GetBounds();
   os << indent << "Bounds: \n";
   os << indent << "  Xmin,Xmax: (" <<bounds[0] << ", " << bounds[1] << ")\n";
   os << indent << "  Ymin,Ymax: (" <<bounds[2] << ", " << bounds[3] << ")\n";
@@ -782,7 +780,7 @@ vtkUnsignedCharArray* vtkDataSet::AllocatePointGhostArray()
     ghosts->SetName(vtkDataSetAttributes::GhostArrayName());
     ghosts->SetNumberOfComponents(1);
     ghosts->SetNumberOfTuples(this->GetNumberOfPoints());
-    ghosts->FillComponent(0, 0);
+    ghosts->FillValue(0);
     this->GetPointData()->AddArray(ghosts);
     ghosts->Delete();
     this->PointGhostArray = ghosts;
@@ -825,7 +823,7 @@ vtkUnsignedCharArray* vtkDataSet::AllocateCellGhostArray()
     ghosts->SetName(vtkDataSetAttributes::GhostArrayName());
     ghosts->SetNumberOfComponents(1);
     ghosts->SetNumberOfTuples(this->GetNumberOfCells());
-    ghosts->FillComponent(0, 0);
+    ghosts->FillValue(0);
     this->GetCellData()->AddArray(ghosts);
     ghosts->Delete();
     this->CellGhostArray = ghosts;

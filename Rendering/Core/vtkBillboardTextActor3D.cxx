@@ -114,8 +114,8 @@ FastDepthAwareCoordinateConverter(vtkRenderer *ren)
 
   this->NormalizedViewport[0] = std::max(this->Viewport[0], tileViewPort[0]);
   this->NormalizedViewport[1] = std::max(this->Viewport[1], tileViewPort[1]);
-  this->NormalizedViewport[2] = std::max(this->Viewport[2], tileViewPort[2]);
-  this->NormalizedViewport[3] = std::max(this->Viewport[3], tileViewPort[3]);
+  this->NormalizedViewport[2] = std::min(this->Viewport[2], tileViewPort[2]);
+  this->NormalizedViewport[3] = std::min(this->Viewport[3], tileViewPort[3]);
 
   size = ren->GetRenderWindow()->GetSize();
   this->DisplayOffset[0] = this->Viewport[0] * size[0] + 0.5;
@@ -256,6 +256,60 @@ void vtkBillboardTextActor3D::SetInput(const char *in)
 }
 
 //------------------------------------------------------------------------------
+void vtkBillboardTextActor3D::SetForceOpaque(bool opaque)
+{
+  this->QuadActor->SetForceOpaque(opaque);
+}
+
+//------------------------------------------------------------------------------
+bool vtkBillboardTextActor3D::GetForceOpaque()
+{
+  return this->QuadActor->GetForceOpaque();
+}
+
+//------------------------------------------------------------------------------
+void vtkBillboardTextActor3D::ForceOpaqueOn()
+{
+  this->QuadActor->ForceOpaqueOn();
+}
+
+//------------------------------------------------------------------------------
+void vtkBillboardTextActor3D::ForceOpaqueOff()
+{
+  this->QuadActor->ForceOpaqueOff();
+}
+
+//------------------------------------------------------------------------------
+void vtkBillboardTextActor3D::SetForceTranslucent(bool trans)
+{
+  this->QuadActor->SetForceTranslucent(trans);
+}
+
+//------------------------------------------------------------------------------
+bool vtkBillboardTextActor3D::GetForceTranslucent()
+{
+  return this->QuadActor->GetForceTranslucent();
+}
+
+//------------------------------------------------------------------------------
+void vtkBillboardTextActor3D::ForceTranslucentOn()
+{
+  this->QuadActor->ForceTranslucentOn();
+}
+
+//------------------------------------------------------------------------------
+void vtkBillboardTextActor3D::ForceTranslucentOff()
+{
+  this->QuadActor->ForceTranslucentOff();
+}
+
+//------------------------------------------------------------------------------
+int vtkBillboardTextActor3D::HasTranslucentPolygonalGeometry()
+{
+  return this->QuadActor->HasTranslucentPolygonalGeometry();
+}
+
+//------------------------------------------------------------------------------
 int vtkBillboardTextActor3D::RenderOpaqueGeometry(vtkViewport *vp)
 {
   if (!this->InputIsValid())
@@ -288,7 +342,8 @@ int vtkBillboardTextActor3D::RenderOpaqueGeometry(vtkViewport *vp)
     this->GenerateQuad(ren);
   }
 
-  return 0;
+  this->PreRender();
+  return this->QuadActor->RenderOpaqueGeometry(vp);
 }
 
 //------------------------------------------------------------------------------

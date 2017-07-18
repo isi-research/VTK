@@ -136,7 +136,7 @@ public:
     cerr << "\n### Selection ###\n";
     cerr << "Points: ";
     for (std::vector<int>::iterator i = this->PointIds.begin();
-         i != this->PointIds.end(); i++)
+         i != this->PointIds.end(); ++i)
     {
       cerr << *i << " ";
     }
@@ -212,5 +212,5 @@ int TestPointSelection(int argc, char *argv[])
     return EXIT_FAILURE;
   }
 
-  return EXIT_SUCCESS;
+  return !retVal;
 }

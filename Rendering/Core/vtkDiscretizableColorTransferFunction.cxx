@@ -84,7 +84,7 @@ void vtkDiscretizableColorTransferFunction::SetNumberOfIndexedColors(
 {
   if (static_cast<unsigned int>(this->Internals->IndexedColors.size()) != count)
   {
-    this->Internals->IndexedColors.resize(count);
+    this->Internals->IndexedColors.resize(count, vtkTuple<double,3>(0.0));
     this->Modified();
   }
 }
@@ -175,7 +175,7 @@ void vtkDiscretizableColorTransferFunction::Build()
 {
   this->Superclass::Build();
 
-  if (this->BuildTime > this->GetMTime())
+  if (this->LookupTableUpdateTime > this->GetMTime())
   {
     // no need to rebuild anything.
     return;
@@ -274,7 +274,7 @@ void vtkDiscretizableColorTransferFunction::Build()
 
   this->LookupTable->BuildSpecialColors();
 
-  this->BuildTime.Modified();
+  this->LookupTableUpdateTime.Modified();
 }
 
 //-----------------------------------------------------------------------------
@@ -362,6 +362,14 @@ vtkUnsignedCharArray* vtkDiscretizableColorTransferFunction::MapScalars(
      (this->EnableOpacityMapping == true) &&
      (this->ScalarOpacityFunction.GetPointer() != NULL))
   {
+    // extract from docs from vtkScalarsToColors.h:
+    // "... When the component argument is -1,
+    //      then the this object uses its own selected technique to change a
+    //      vector into a scalar to map."
+    if (component < 0 && scalars->GetNumberOfComponents() > 1)
+    {
+      component = (this->VectorMode == vtkScalarsToColors::COMPONENT) ? this->VectorComponent : -1;
+    }
     vtkDataArray* da = vtkArrayDownCast<vtkDataArray>(scalars);
     this->MapDataArrayToOpacity(da, component, colors);
   }

@@ -19,6 +19,7 @@
 #include "vtkCompositeDataSet.h"
 #include "vtkDataArray.h"
 #include "vtkInformation.h"
+#include "vtkInformationDoubleKey.h"
 #include "vtkInformationIntegerKey.h"
 #include "vtkInformationObjectBaseKey.h"
 #include "vtkInformationStringKey.h"
@@ -26,10 +27,12 @@
 #include "vtkObjectFactory.h"
 #include "vtkPiecewiseFunction.h"
 #include "vtkPolyData.h"
+#include "vtkProperty.h"
 #include "vtkViewNodeCollection.h"
 
 #include "ospray/ospray.h"
 
+vtkInformationKeyMacro(vtkOSPRayActorNode, LUMINOSITY, Double);
 vtkInformationKeyMacro(vtkOSPRayActorNode, ENABLE_SCALING, Integer);
 vtkInformationKeyMacro(vtkOSPRayActorNode, SCALE_ARRAY_NAME, String);
 vtkInformationKeyMacro(vtkOSPRayActorNode, SCALE_FUNCTION, ObjectBase);
@@ -40,6 +43,7 @@ vtkStandardNewMacro(vtkOSPRayActorNode);
 //----------------------------------------------------------------------------
 vtkOSPRayActorNode::vtkOSPRayActorNode()
 {
+  this->LastMapper = NULL;
 }
 
 //----------------------------------------------------------------------------
@@ -120,6 +124,33 @@ void vtkOSPRayActorNode::SetScaleFunction(vtkPiecewiseFunction *scaleFunction,
 }
 
 //----------------------------------------------------------------------------
+void vtkOSPRayActorNode::SetLuminosity(double value, vtkProperty *property)
+{
+  if (!property)
+  {
+    return;
+  }
+  vtkInformation *info = property->GetInformation();
+  info->Set(vtkOSPRayActorNode::LUMINOSITY(), value);
+}
+
+//----------------------------------------------------------------------------
+double vtkOSPRayActorNode::GetLuminosity(vtkProperty *property)
+{
+  if (!property)
+  {
+    return 0.0;
+  }
+  vtkInformation *info = property->GetInformation();
+  if (info && info->Has(vtkOSPRayActorNode::LUMINOSITY()))
+  {
+    double retval = info->Get(vtkOSPRayActorNode::LUMINOSITY());
+    return retval;
+  }
+  return 0.0;
+}
+
+//----------------------------------------------------------------------------
 vtkMTimeType vtkOSPRayActorNode::GetMTime()
 {
   vtkMTimeType mtime = this->Superclass::GetMTime();
@@ -127,6 +158,17 @@ vtkMTimeType vtkOSPRayActorNode::GetMTime()
   if (act->GetMTime() > mtime)
   {
     mtime = act->GetMTime();
+  }
+  if (vtkProperty *prop = act->GetProperty())
+  {
+    if (prop->GetMTime() > mtime)
+    {
+      mtime = prop->GetMTime();
+    }
+    if (prop->GetInformation()->GetMTime() > mtime)
+    {
+      mtime = prop->GetInformation()->GetMTime();
+    }
   }
   vtkDataObject * dobj = NULL;
   vtkPolyData *poly = NULL;
@@ -144,6 +186,12 @@ vtkMTimeType vtkOSPRayActorNode::GetMTime()
     if (mapper->GetInformation()->GetMTime() > mtime)
     {
       mtime = mapper->GetInformation()->GetMTime();
+    }
+    if (mapper != this->LastMapper)
+    {
+      this->MapperChangedTime.Modified();
+      mtime = this->MapperChangedTime;
+      this->LastMapper = mapper;
     }
     vtkPiecewiseFunction *pwf = vtkPiecewiseFunction::SafeDownCast
       (mapper->GetInformation()->Get(vtkOSPRayActorNode::SCALE_FUNCTION()));

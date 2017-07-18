@@ -232,6 +232,16 @@ public:
    */
   vtkIdType Capacity() { return this->Size; }
 
+  /**
+   * Set component @a comp of all tuples to @a value.
+   */
+  virtual void FillTypedComponent(int compIdx, ValueType value);
+
+  /**
+   * Set all the values in array to @a value.
+   */
+  virtual void FillValue(ValueType value);
+
   int GetDataType() VTK_OVERRIDE;
   int GetDataTypeSize() VTK_OVERRIDE;
   bool HasStandardMemoryLayout() VTK_OVERRIDE;
@@ -291,6 +301,7 @@ public:
   virtual void LookupTypedValue(ValueType value, vtkIdList* valueIds);
   void ClearLookup() VTK_OVERRIDE;
   void DataChanged() VTK_OVERRIDE;
+  void FillComponent(int compIdx, double value) VTK_OVERRIDE;
   VTK_NEWINSTANCE vtkArrayIterator* NewIterator() VTK_OVERRIDE;
 
 protected:
@@ -321,13 +332,15 @@ protected:
   // valid/accessible.
   bool EnsureAccessToTuple(vtkIdType tupleIdx);
 
+  std::vector<double> LegacyTuple;
+  std::vector<ValueType> LegacyValueRange;
+
   vtkGenericDataArrayLookupHelper<SelfType> Lookup;
+
 private:
   vtkGenericDataArray(const vtkGenericDataArray&) VTK_DELETE_FUNCTION;
   void operator=(const vtkGenericDataArray&) VTK_DELETE_FUNCTION;
 
-  std::vector<double> LegacyTuple;
-  std::vector<ValueType> LegacyValueRange;
 };
 
 #include "vtkGenericDataArray.txx"

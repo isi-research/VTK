@@ -1179,7 +1179,7 @@ static int cgmCgmPic(cgmImagePtr im, int sticky)
 {
 /* Start the picture.  if the sticky bit is set, set and use the defaults
  * of the previous picture.  Otherwise, reset all defaults.
- * Gej: sticky = 0 reset defaults, 1 dont reset anything, 2 only
+ * Gej: sticky = 0 reset defaults, 1 don't reset anything, 2 only
  * reset the color table
  */
   unsigned char *headerp;
@@ -1213,7 +1213,7 @@ static int cgmCgmPic(cgmImagePtr im, int sticky)
   head=headerp;
 
   /*** Attribute: BegPic; Elem Class 0; Elem ID 3 */
-  sprintf(tb, "picture %d", im->picnum);
+  snprintf(tb, 4*4, "picture %d", im->picnum);
   buf = reinterpret_cast<unsigned char*>(tb);
   /* buf = (unsigned char *) "picture 1"; */
   blen = static_cast<int>(strlen(reinterpret_cast<char *>(buf)));
@@ -4290,11 +4290,11 @@ static int cgmImageAddFont(cgmImagePtr im, const char *fontname)
   }
   if (oldfonts)
   {
-    sprintf((char *)im->fontlist, "%s%s%s", (char *)oldfonts, ",", fontname);
+    snprintf((char *)im->fontlist, listsize, "%s%s%s", (char *)oldfonts, ",", fontname);
   }
   else
   {
-    sprintf((char *)im->fontlist, "%s", fontname);
+    snprintf((char *)im->fontlist, listsize, "%s", fontname);
   }
   im->numfonts++;
   if (oldfonts)

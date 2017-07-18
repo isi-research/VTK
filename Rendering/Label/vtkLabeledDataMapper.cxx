@@ -23,6 +23,7 @@
 #include "vtkInformation.h"
 #include "vtkIntArray.h"
 #include "vtkObjectFactory.h"
+#include "vtkPlaneCollection.h"
 #include "vtkPointData.h"
 #include "vtkPointSet.h"
 #include "vtkSmartPointer.h"
@@ -49,9 +50,9 @@ vtkCxxSetObjectMacro(vtkLabeledDataMapper,Transform,vtkTransform);
 // ----------------------------------------------------------------------
 
 template<typename T>
-void vtkLabeledDataMapper_PrintComponent(char *output, const char *format, int index, const T *array)
+void vtkLabeledDataMapper_PrintComponent(char *output, size_t outputSize, const char *format, int index, const T *array)
 {
-  sprintf(output, format, array[index]);
+  snprintf(output, outputSize, format, array[index]);
 }
 
 
@@ -216,7 +217,21 @@ void vtkLabeledDataMapper::RenderOverlay(vtkViewport *viewport,
       actor->GetPositionCoordinate()->SetValue(pos);
     }
 
-    this->TextMappers[i]->RenderOverlay(viewport, actor);
+    bool show = true;
+    if (this->ClippingPlanes)
+    {
+      for (int p = 0; p < this->GetNumberOfClippingPlanes(); ++p)
+      {
+        if (this->ClippingPlanes->GetItem(p)->FunctionValue(pos) < 0.0)
+        {
+          show = false;
+        }
+      }
+    }
+    if (show)
+    {
+      this->TextMappers[i]->RenderOverlay(viewport, actor);
+    }
   }
 }
 
@@ -282,8 +297,21 @@ void vtkLabeledDataMapper::RenderOpaqueGeometry(vtkViewport *viewport,
       actor->GetPositionCoordinate()->SetCoordinateSystemToDisplay();
       actor->GetPositionCoordinate()->SetValue(pos);
     }
-
-    this->TextMappers[i]->RenderOpaqueGeometry(viewport, actor);
+    bool show = true;
+    if (this->ClippingPlanes)
+    {
+      for (int p = 0; p < this->GetNumberOfClippingPlanes(); ++p)
+      {
+        if (this->ClippingPlanes->GetItem(p)->FunctionValue(pos) < 0.0)
+        {
+          show = false;
+        }
+      }
+    }
+    if (show)
+    {
+      this->TextMappers[i]->RenderOpaqueGeometry(viewport, actor);
+    }
   }
 }
 
@@ -463,7 +491,7 @@ void vtkLabeledDataMapper::BuildLabelsInternal(vtkDataSet* input)
       {
         case VTK_VOID: FormatString = "0x%x"; break;
 
-        // dont use vtkTypeTraits::ParseFormat for character types as parse formats
+        // don't use vtkTypeTraits::ParseFormat for character types as parse formats
           // aren't the same as print formats for these types.
           case VTK_BIT:
           case VTK_SHORT:
@@ -502,12 +530,12 @@ void vtkLabeledDataMapper::BuildLabelsInternal(vtkDataSet* input)
     }
     else if (stringData)
     {
-      FormatString = ""; // we'll use vtkStdString::operator+ instead of sprintf
+      FormatString = "";
     }
     else if (uStringData)
     {
       vtkWarningMacro( "Unicode string arrays are not adequately supported by the vtkLabeledDataMapper.  Unicode strings will be converted to vtkStdStrings for rendering.");
-      FormatString = "unicode"; // we'll use vtkStdString::operator+ instead of sprintf
+      FormatString = "unicode";
     }
     else
     {
@@ -543,7 +571,7 @@ void vtkLabeledDataMapper::BuildLabelsInternal(vtkDataSet* input)
 
     if ( pointIdLabels )
     {
-      sprintf(TempString, LiveFormatString, i);
+      snprintf(TempString, sizeof(TempString), LiveFormatString, i);
       ResultString = TempString;
     }
     else
@@ -556,7 +584,7 @@ void vtkLabeledDataMapper::BuildLabelsInternal(vtkDataSet* input)
         {
           switch (numericData->GetDataType())
           {
-            vtkTemplateMacro(vtkLabeledDataMapper_PrintComponent(TempString,
+            vtkTemplateMacro(vtkLabeledDataMapper_PrintComponent(TempString, sizeof(TempString),
                 LiveFormatString, activeComp, static_cast<VTK_TT *>(rawData)));
           }
           ResultString = TempString;
@@ -572,6 +600,7 @@ void vtkLabeledDataMapper::BuildLabelsInternal(vtkDataSet* input)
             {
               vtkTemplateMacro(
                 vtkLabeledDataMapper_PrintComponent(TempString,
+                                                    sizeof(TempString),
                                                     LiveFormatString,
                                                     j,
                                                     static_cast<VTK_TT *>(rawData)));
@@ -592,7 +621,7 @@ void vtkLabeledDataMapper::BuildLabelsInternal(vtkDataSet* input)
       else // rendering string data
       {
         // If the user hasn't given us a custom format string then
-        // we'll sidestep a lot of sprintf nonsense.
+        // we'll sidestep a lot of snprintf nonsense.
         if (this->LabelFormat == NULL)
         {
           if( uStringData )

@@ -99,6 +99,7 @@ public:
    * Standard vtkDataSet interface.
    */
   vtkIdType GetNumberOfCells() VTK_OVERRIDE;
+  using vtkDataSet::GetCell;
   vtkCell *GetCell(vtkIdType cellId) VTK_OVERRIDE;
   void GetCell(vtkIdType cellId, vtkGenericCell *cell) VTK_OVERRIDE;
   int GetCellType(vtkIdType cellId) VTK_OVERRIDE;
@@ -192,7 +193,7 @@ public:
 
   //@{
   /**
-   * Return the number of primitives of a particular type held..
+   * Return the number of primitives of a particular type held.
    */
   vtkIdType GetNumberOfVerts();
   vtkIdType GetNumberOfLines();
@@ -519,6 +520,15 @@ public:
                                    vtkDataArray *scalarField);
   int GetScalarFieldCriticalIndex (vtkIdType pointId, int fieldId);
   int GetScalarFieldCriticalIndex (vtkIdType pointId, const char* fieldName);
+
+  /**
+   * Return the mesh (geometry/topology) modification time.
+   * This time is different from the usual MTime which also takes into
+   * account the modification of data arrays. This function can be used to
+   * track the changes on the mesh separately from the data arrays
+   * (eg. static mesh over time with transient data).
+   */
+  virtual vtkMTimeType GetMeshMTime();
 
 protected:
   vtkPolyData();

@@ -32,21 +32,21 @@
 
 class vtkOpenGLRenderWindow;
 class vtkDepthPeelingPassLayerList; // Pimpl
-class vtkFrameBufferObject;
+class vtkOpenGLFramebufferObject;
 class vtkTextureObject;
 
 class VTKRENDERINGOPENGL2_EXPORT vtkImageProcessingPass : public vtkRenderPass
 {
 public:
   vtkTypeMacro(vtkImageProcessingPass,vtkRenderPass);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   /**
    * Release graphics resources and ask components to release their own
    * resources.
    * \pre w_exists: w!=0
    */
-  void ReleaseGraphicsResources(vtkWindow *w);
+  void ReleaseGraphicsResources(vtkWindow *w) VTK_OVERRIDE;
 
   //@{
   /**
@@ -68,7 +68,7 @@ public:
   /**
    * Destructor.
    */
-  virtual ~vtkImageProcessingPass();
+  ~vtkImageProcessingPass() VTK_OVERRIDE;
 
   /**
    * Render delegate with a image of different dimensions than the
@@ -84,7 +84,7 @@ public:
                       int height,
                       int newWidth,
                       int newHeight,
-                      vtkFrameBufferObject *fbo,
+                      vtkOpenGLFramebufferObject *fbo,
                       vtkTextureObject *target);
 
 

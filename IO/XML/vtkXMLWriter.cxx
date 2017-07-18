@@ -14,9 +14,9 @@
 =========================================================================*/
 #include "vtkXMLWriter.h"
 
+#include "vtkAOSDataArrayTemplate.h"
 #include "vtkArrayDispatch.h"
 #include "vtkArrayIteratorIncludes.h"
-#include "vtkAOSDataArrayTemplate.h"
 #include "vtkBase64OutputStream.h"
 #include "vtkByteSwap.h"
 #include "vtkCellData.h"
@@ -36,6 +36,7 @@
 #include "vtkInformationStringVectorKey.h"
 #include "vtkInformationUnsignedLongKey.h"
 #include "vtkInformationVector.h"
+#include "vtkLZ4DataCompressor.h"
 #include "vtkNew.h"
 #include "vtkOutputStream.h"
 #include "vtkPointData.h"
@@ -68,10 +69,7 @@
 # include <io.h> /* unlink */
 #endif
 
-#if defined(__BORLANDC__)
-#include <cctype> // isalnum is defined here for some versions of Borland
-#endif
-
+#include <cctype> // for isalnum
 #include <locale> // C++ locale
 
 
@@ -341,16 +339,17 @@ static int vtkXMLWriterWriteBinaryDataBlocks(
     size_t cur_offset = 0; // offset into the temp_buffer.
     while (index < numStrings && cur_offset < maxCharsPerBlock)
     {
-      vtkStdString &str = iter->GetValue(index);
+      vtkStdString &str = iter->GetValue(static_cast<vtkIdType>(index));
       vtkStdString::size_type length = str.size();
       const char* data = str.c_str();
       data += stringOffset; // advance by the chars already written.
       length -= stringOffset;
-      stringOffset = 0;
       if (length == 0)
       {
         // just write the string termination char.
         temp_buffer[cur_offset++] = 0x0;
+        stringOffset = 0;
+        index++; // advance to the next string
       }
       else
       {
@@ -360,16 +359,18 @@ static int vtkXMLWriterWriteBinaryDataBlocks(
           memcpy(&temp_buffer[cur_offset], data, length);
           cur_offset += length;
           temp_buffer[cur_offset++] = 0x0;
+          stringOffset = 0;
+          index++; // advance to the next string
         }
         else
         {
           size_t bytes_to_copy =  (maxCharsPerBlock - cur_offset);
-          stringOffset = bytes_to_copy;
+          stringOffset += static_cast<vtkIdType>(bytes_to_copy);
           memcpy(&temp_buffer[cur_offset], data, bytes_to_copy);
           cur_offset += bytes_to_copy;
+          // do not advance, only partially written current string
         }
       }
-      index++;
     }
     if (cur_offset > 0)
     {
@@ -468,22 +469,31 @@ void vtkXMLWriter::SetCompressorType(int compressorType)
     if (this->Compressor)
     {
       this->Compressor->Delete();
-      this->Compressor = 0;
+      this->Compressor = NULL;
       this->Modified();
     }
-    return;
   }
-
-  if (compressorType == ZLIB)
+  else if (compressorType == ZLIB)
   {
     if (this->Compressor && !this->Compressor->IsTypeOf("vtkZLibDataCompressor"))
     {
       this->Compressor->Delete();
     }
-
     this->Compressor = vtkZLibDataCompressor::New();
     this->Modified();
-    return;
+  }
+  else if (compressorType == LZ4)
+  {
+    if (this->Compressor &&
+        !this->Compressor->IsTypeOf("vtkLZ4DataCompressor")) {
+      this->Compressor->Delete();
+    }
+    this->Compressor = vtkLZ4DataCompressor::New();
+    this->Modified();
+  }
+  else
+  {
+    vtkWarningMacro("Invalid compressorType:" << compressorType);
   }
 }
 
@@ -1383,8 +1393,10 @@ int vtkXMLWriter::WriteBinaryDataInternal(vtkAbstractArray* a)
     {
         switch (wordType)
         {
+#if !defined(VTK_LEGACY_REMOVE)
           case VTK___INT64:
           case VTK_UNSIGNED___INT64:
+#endif
           case VTK_LONG_LONG:
           case VTK_UNSIGNED_LONG_LONG:
 #ifdef VTK_USE_64BIT_IDS

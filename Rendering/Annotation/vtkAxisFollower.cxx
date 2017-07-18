@@ -358,6 +358,11 @@ void vtkAxisFollower::ComputeRotationAndTranlation(vtkRenderer *ren, double tran
   {
     this->ExecuteViewAngleVisibility(rZ);
   }
+  else
+  {
+    this->VisibleAtCurrentViewAngle = 1;
+  }
+
 
   // Since we already stored all the possible Y axes that are geometry aligned,
   // we compare our vertical vector with these vectors and if it aligns then we
@@ -392,7 +397,7 @@ void vtkAxisFollower::ComputerAutoCenterTranslation(
     return;
   }
 
-  double *bounds = this->GetMapper()->GetBounds();
+  const double *bounds = this->GetMapper()->GetBounds();
 
   // Offset by half of width.
   double halfWidth  = (bounds[1] - bounds[0]) * 0.5 * this->Scale[0];
@@ -418,8 +423,6 @@ void vtkAxisFollower::ComputerAutoCenterTranslation(
   {
     // Do nothing.
   }
-
-  return;
 }
 
 //----------------------------------------------------------------------

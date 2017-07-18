@@ -1020,8 +1020,6 @@ void vtkCellLocator::GetBucketNeighbors(int ijk[3], int ndivs, int level)
       }
     }
   }
-
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -1195,7 +1193,7 @@ void vtkCellLocator::ForceBuildLocator()
 //
 void vtkCellLocator::BuildLocatorInternal()
 {
-  double *bounds, length, cellBounds[6], *boundsPtr;
+  double length, cellBounds[6], *boundsPtr;
   vtkIdType numCells;
   int ndivs, product;
   int i, j, k, ijkMin[3], ijkMax[3];
@@ -1227,7 +1225,7 @@ void vtkCellLocator::BuildLocatorInternal()
   //  Size the root cell.  Initialize cell data structure, compute
   //  level and divisions.
   //
-  bounds = this->DataSet->GetBounds();
+  const double *bounds = this->DataSet->GetBounds();
   length = this->DataSet->GetLength();
   for (i=0; i<3; i++)
   {
@@ -1993,4 +1991,3 @@ void vtkCellLocator::PrintSelf(ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os,indent);
 }
-

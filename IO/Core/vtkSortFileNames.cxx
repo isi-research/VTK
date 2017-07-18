@@ -278,7 +278,7 @@ void vtkSortFileNames::GroupFileNames(vtkStringArray *input,
       }
       else
       {
-        p++;
+        ++p;
       }
     }
 
@@ -514,7 +514,7 @@ void vtkSortFileNames::SortFileNames(vtkStringArray *input,
 
     // skip anything that is a directory
     if (this->SkipDirectories &&
-        vtksys::SystemTools::FileIsDirectory(fileName.c_str()))
+        vtksys::SystemTools::FileIsDirectory(fileName))
     {
       continue;
     }

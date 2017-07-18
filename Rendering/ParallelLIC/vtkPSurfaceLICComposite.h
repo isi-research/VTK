@@ -37,7 +37,6 @@
 
 class vtkFloatArray;
 class vtkRenderWindow;
-class vtkFrameBufferObject2;
 class vtkTextureObject;
 class vtkPainterCommunicator;
 class vtkPPainterCommunicator;
@@ -45,8 +44,10 @@ class vtkPPixelExtentOps;
 
 #ifdef VTK_OPENGL2
 class vtkOpenGLHelper;
+class vtkOpenGLFramebufferObject;
 #else
 class vtkShaderProgram2;
+class vtkFrameBufferObject2;
 #endif
 
 class VTKRENDERINGPARALLELLIC_EXPORT vtkPSurfaceLICComposite : public vtkSurfaceLICComposite
@@ -54,27 +55,27 @@ class VTKRENDERINGPARALLELLIC_EXPORT vtkPSurfaceLICComposite : public vtkSurface
 public:
   static vtkPSurfaceLICComposite *New();
   vtkTypeMacro(vtkPSurfaceLICComposite, vtkSurfaceLICComposite);
-  virtual void PrintSelf(ostream &os, vtkIndent indent);
+  virtual void PrintSelf(ostream &os, vtkIndent indent) VTK_OVERRIDE;
 
   /**
    * Set the rendering context. Must set prior to use. Reference is not
-   * held, so caller must ensure the renderer is not destroyed durring
+   * held, so caller must ensure the renderer is not destroyed during
    * use.
    */
-  virtual void SetContext(vtkOpenGLRenderWindow *rwin);
-  virtual vtkOpenGLRenderWindow *GetContext(){ return this->Context; }
+  virtual void SetContext(vtkOpenGLRenderWindow *rwin) VTK_OVERRIDE;
+  virtual vtkOpenGLRenderWindow *GetContext() VTK_OVERRIDE { return this->Context; }
 
   /**
    * Set the communicator for parallel communication. The Default is
    * COMM_NULL.
    */
-   virtual void SetCommunicator(vtkPainterCommunicator *comm);
+   virtual void SetCommunicator(vtkPainterCommunicator *comm) VTK_OVERRIDE;
 
   /**
    * Build programs to move data to the new decomp
    * THIS IS A COLLECTIVE OPERATION
    */
-  virtual int BuildProgram(float *vectors);
+  virtual int BuildProgram(float *vectors) VTK_OVERRIDE;
 
   /**
    * Move a single buffer from the geometry decomp to the LIC decomp.
@@ -84,7 +85,7 @@ public:
         void *pSendPBO,
         int dataType,
         int nComps,
-        vtkTextureObject *&newImage);
+        vtkTextureObject *&newImage) VTK_OVERRIDE;
 
   /**
    * Move a single buffer from the LIC decomp to the geometry decomp
@@ -94,7 +95,7 @@ public:
         void *pSendPBO,
         int dataType,
         int nComps,
-        vtkTextureObject *&newImage);
+        vtkTextureObject *&newImage) VTK_OVERRIDE;
 
 protected:
   vtkPSurfaceLICComposite();
@@ -202,11 +203,12 @@ private:
   int CommSize;
 
   vtkWeakPointer<vtkOpenGLRenderWindow> Context; // rendering context
-  vtkFrameBufferObject2 *FBO;                    // buffer object
 
 #ifdef VTK_OPENGL2
+  vtkOpenGLFramebufferObject *FBO;               // Framebuffer object
   vtkOpenGLHelper *CompositeShader;
 #else
+  vtkFrameBufferObject2 *FBO;                    // buffer object
   vtkShaderProgram2 *CompositeShader;            // shader program for compositing
 #endif
 

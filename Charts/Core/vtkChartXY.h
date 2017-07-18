@@ -27,11 +27,11 @@
 #ifndef vtkChartXY_h
 #define vtkChartXY_h
 
-#include "vtkChartsCoreModule.h" // For export macro
 #include "vtkChart.h"
-#include "vtkSmartPointer.h" // For SP ivars
-#include "vtkVector.h" // For vtkVector2f in struct
-#include "vtkContextPolygon.h" // For vtkContextPolygon
+#include "vtkChartsCoreModule.h" // For export macro
+#include "vtkContextPolygon.h"   // For vtkContextPolygon
+#include "vtkSmartPointer.h"     // For SP ivars
+#include "vtkVector.h"           // For vtkVector2f in struct
 
 class vtkPlot;
 class vtkAxis;
@@ -44,50 +44,50 @@ class VTKCHARTSCORE_EXPORT vtkChartXY : public vtkChart
 {
 public:
   vtkTypeMacro(vtkChartXY, vtkChart);
-  virtual void PrintSelf(ostream &os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   /**
    * Creates a 2D Chart object.
    */
-  static vtkChartXY *New();
+  static vtkChartXY* New();
 
   /**
    * Perform any updates to the item that may be necessary before rendering.
    * The scene should take care of calling this on all items before their
    * Paint function is invoked.
    */
-  virtual void Update();
+  void Update() VTK_OVERRIDE;
 
   /**
    * Paint event for the chart, called whenever the chart needs to be drawn
    */
-  virtual bool Paint(vtkContext2D *painter);
+  bool Paint(vtkContext2D* painter) VTK_OVERRIDE;
 
   /**
    * Add a plot to the chart, defaults to using the name of the y column
    */
-  virtual vtkPlot * AddPlot(int type);
+  vtkPlot* AddPlot(int type) VTK_OVERRIDE;
 
   /**
    * Adds a plot to the chart
    */
-  virtual vtkIdType AddPlot(vtkPlot* plot);
+  vtkIdType AddPlot(vtkPlot* plot) VTK_OVERRIDE;
 
   /**
    * Remove the plot at the specified index, returns true if successful,
    * false if the index was invalid.
    */
-  virtual bool RemovePlot(vtkIdType index);
+  bool RemovePlot(vtkIdType index) VTK_OVERRIDE;
 
   /**
    * Remove all plots from the chart.
    */
-  virtual void ClearPlots();
+  void ClearPlots() VTK_OVERRIDE;
 
   /**
    * Get the plot at the specified index, returns null if the index is invalid.
    */
-  virtual vtkPlot* GetPlot(vtkIdType index);
+  vtkPlot* GetPlot(vtkIdType index) VTK_OVERRIDE;
 
   /**
    * Get the index of the specified plot, returns -1 if the plot does not
@@ -128,39 +128,39 @@ public:
   /**
    * Get the number of plots the chart contains.
    */
-  virtual vtkIdType GetNumberOfPlots();
+  vtkIdType GetNumberOfPlots() VTK_OVERRIDE;
 
   /**
    * Figure out which quadrant the plot is in.
    */
-  int GetPlotCorner(vtkPlot *plot);
+  int GetPlotCorner(vtkPlot* plot);
 
   /**
    * Figure out which quadrant the plot is in.
    */
-  void SetPlotCorner(vtkPlot *plot, int corner);
+  void SetPlotCorner(vtkPlot* plot, int corner);
 
   /**
    * Get the axis specified by axisIndex. This is specified with the vtkAxis
    * position enum, valid values are vtkAxis::LEFT, vtkAxis::BOTTOM,
    * vtkAxis::RIGHT and vtkAxis::TOP.
    */
-  virtual vtkAxis* GetAxis(int axisIndex);
+  vtkAxis* GetAxis(int axisIndex) VTK_OVERRIDE;
 
   /**
    * Set whether the chart should draw a legend.
    */
-  virtual void SetShowLegend(bool visible);
+  void SetShowLegend(bool visible) VTK_OVERRIDE;
 
   /**
    * Get the vtkChartLegend object that will be displayed by the chart.
    */
-  virtual vtkChartLegend* GetLegend();
+  vtkChartLegend* GetLegend() VTK_OVERRIDE;
 
   /**
    * Set the vtkTooltipItem object that will be displayed by the chart.
    */
-  virtual void SetTooltip(vtkTooltipItem *tooltip);
+  virtual void SetTooltip(vtkTooltipItem* tooltip);
 
   /**
    * Get the vtkTooltipItem object that will be displayed by the chart.
@@ -170,13 +170,13 @@ public:
   /**
    * Get the number of axes in the current chart.
    */
-  virtual vtkIdType GetNumberOfAxes();
+  vtkIdType GetNumberOfAxes() VTK_OVERRIDE;
 
   /**
    * Request that the chart recalculates the range of its axes. Especially
    * useful in applications after the parameters of plots have been modified.
    */
-  virtual void RecalculateBounds();
+  void RecalculateBounds() VTK_OVERRIDE;
 
   /**
    * Set the selection method, which controls how selections are handled by the
@@ -185,7 +185,7 @@ public:
    * for finer-grained selections specific to each plot, and so to each XY
    * column pair.
    */
-  virtual void SetSelectionMethod(int method);
+  void SetSelectionMethod(int method) VTK_OVERRIDE;
 
   //@{
   /**
@@ -263,54 +263,52 @@ public:
   /**
    * Set the information passed to the tooltip.
    */
-  virtual void SetTooltipInfo(const vtkContextMouseEvent &,
-                              const vtkVector2d &,
-                              vtkIdType, vtkPlot*,
-                              vtkIdType segmentIndex = -1);
+  virtual void SetTooltipInfo(const vtkContextMouseEvent&, const vtkVector2d&, vtkIdType, vtkPlot*,
+    vtkIdType segmentIndex = -1);
 
   /**
    * Return true if the supplied x, y coordinate is inside the item.
    */
-  virtual bool Hit(const vtkContextMouseEvent &mouse);
+  bool Hit(const vtkContextMouseEvent& mouse) VTK_OVERRIDE;
 
   /**
    * Mouse enter event.
    */
-  virtual bool MouseEnterEvent(const vtkContextMouseEvent &mouse);
+  bool MouseEnterEvent(const vtkContextMouseEvent& mouse) VTK_OVERRIDE;
 
   /**
    * Mouse move event.
    */
-  virtual bool MouseMoveEvent(const vtkContextMouseEvent &mouse);
+  bool MouseMoveEvent(const vtkContextMouseEvent& mouse) VTK_OVERRIDE;
 
   /**
    * Mouse leave event.
    */
-  virtual bool MouseLeaveEvent(const vtkContextMouseEvent &mouse);
+  bool MouseLeaveEvent(const vtkContextMouseEvent& mouse) VTK_OVERRIDE;
 
   /**
    * Mouse button down event
    */
-  virtual bool MouseButtonPressEvent(const vtkContextMouseEvent &mouse);
+  bool MouseButtonPressEvent(const vtkContextMouseEvent& mouse) VTK_OVERRIDE;
 
   /**
    * Mouse button release event.
    */
-  virtual bool MouseButtonReleaseEvent(const vtkContextMouseEvent &mouse);
+  bool MouseButtonReleaseEvent(const vtkContextMouseEvent& mouse) VTK_OVERRIDE;
 
   /**
    * Mouse wheel event, positive delta indicates forward movement of the wheel.
    */
-  virtual bool MouseWheelEvent(const vtkContextMouseEvent &mouse, int delta);
+  bool MouseWheelEvent(const vtkContextMouseEvent& mouse, int delta) VTK_OVERRIDE;
 
   /**
    * Key press event.
    */
-  virtual bool KeyPressEvent(const vtkContextKeyEvent &key);
+  bool KeyPressEvent(const vtkContextKeyEvent& key) VTK_OVERRIDE;
 
 protected:
   vtkChartXY();
-  ~vtkChartXY();
+  ~vtkChartXY() VTK_OVERRIDE;
 
   /**
    * Recalculate the necessary transforms.
@@ -408,12 +406,6 @@ protected:
   float BarWidthFraction;
 
   /**
-   * Indicate if the layout has changed in some way that would require layout
-   * code to be called.
-   */
-  bool LayoutChanged;
-
-  /**
    * Property to force the axes to have their Minimum and Maximum properties
    * inside the plot boundaries. It constrains pan and zoom interaction.
    * False by default.
@@ -433,10 +425,10 @@ protected:
   bool AdjustLowerBoundForLogPlot;
 
 private:
-  vtkChartXY(const vtkChartXY &) VTK_DELETE_FUNCTION;
-  void operator=(const vtkChartXY &) VTK_DELETE_FUNCTION;
+  vtkChartXY(const vtkChartXY&) VTK_DELETE_FUNCTION;
+  void operator=(const vtkChartXY&) VTK_DELETE_FUNCTION;
 
-  vtkChartXYPrivate *ChartPrivate; // Private class where I hide my STL containers
+  vtkChartXYPrivate* ChartPrivate; // Private class where I hide my STL containers
 
   /**
    * Figure out the spacing between the bar chart plots, and their offsets.
@@ -448,28 +440,24 @@ private:
    * If invokeEvent is greater than 0, then an event will be invoked if a point
    * is at that mouse position.
    */
-  bool LocatePointInPlots(const vtkContextMouseEvent &mouse,
-                          int invokeEvent = -1);
+  bool LocatePointInPlots(const vtkContextMouseEvent& mouse, int invokeEvent = -1);
 
-  int LocatePointInPlot(const vtkVector2f &position,
-                        const vtkVector2f &tolerance, vtkVector2f &plotPos,
-                        vtkPlot *plot, vtkIdType &segmentIndex);
+  int LocatePointInPlot(const vtkVector2f& position, const vtkVector2f& tolerance,
+    vtkVector2f& plotPos, vtkPlot* plot, vtkIdType& segmentIndex);
 
   /**
    * Remove the plot from the plot corners list.
    */
-  bool RemovePlotFromCorners(vtkPlot *plot);
+  bool RemovePlotFromCorners(vtkPlot* plot);
 
-  void ZoomInAxes(vtkAxis *x, vtkAxis *y, float *orign, float *max);
+  void ZoomInAxes(vtkAxis* x, vtkAxis* y, float* orign, float* max);
 
   /**
    * Transform the selection box or polygon.
    */
-  void TransformBoxOrPolygon(bool polygonMode, vtkTransform2D *transform,
-                             const vtkVector2f &mousePosition,
-                             vtkVector2f &min, vtkVector2f &max,
-                             vtkContextPolygon &polygon);
-
+  void TransformBoxOrPolygon(bool polygonMode, vtkTransform2D* transform,
+    const vtkVector2f& mousePosition, vtkVector2f& min, vtkVector2f& max,
+    vtkContextPolygon& polygon);
 };
 
 //@{
@@ -487,4 +475,4 @@ struct vtkChartPlotData
 };
 //@}
 
-#endif //vtkChartXY_h
+#endif // vtkChartXY_h

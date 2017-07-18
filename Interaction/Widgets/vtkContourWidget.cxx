@@ -58,6 +58,10 @@ vtkContourWidget::vtkContourWidget()
                                           vtkWidgetEvent::Delete,
                                           this, vtkContourWidget::DeleteAction);
   this->CallbackMapper->SetCallbackMethod(vtkCommand::KeyPressEvent,
+                                          vtkEvent::NoModifier, 8, 1, "BackSpace",
+                                          vtkWidgetEvent::Delete,
+                                          this, vtkContourWidget::DeleteAction);
+  this->CallbackMapper->SetCallbackMethod(vtkCommand::KeyPressEvent,
                                           vtkEvent::ShiftModifier, 127, 1, "Delete",
                                           vtkWidgetEvent::Reset,
                                           this, vtkContourWidget::ResetAction);
@@ -277,7 +281,7 @@ void vtkContourWidget::AddNode()
       return;
     }
 
-    // if in continuous draw mode, we dont want to cose the loop until we are at least
+    // if in continuous draw mode, we don't want to close the loop until we are at least
     // numNodes > pixelTolerance away
 
     int distance2 = static_cast<int>((X - displayPos[0]) * (X - displayPos[0]) +

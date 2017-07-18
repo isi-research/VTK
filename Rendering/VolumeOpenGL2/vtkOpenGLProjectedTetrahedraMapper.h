@@ -45,6 +45,7 @@ class vtkVisibilitySort;
 class vtkUnsignedCharArray;
 class vtkFloatArray;
 class vtkRenderWindow;
+class vtkOpenGLFramebufferObject;
 class vtkOpenGLRenderWindow;
 class vtkOpenGLVertexBufferObject;
 
@@ -55,11 +56,11 @@ public:
   vtkTypeMacro(vtkOpenGLProjectedTetrahedraMapper,
                        vtkProjectedTetrahedraMapper);
   static vtkOpenGLProjectedTetrahedraMapper *New();
-  virtual void PrintSelf(ostream &os, vtkIndent indent);
+  void PrintSelf(ostream &os, vtkIndent indent) VTK_OVERRIDE;
 
-  virtual void ReleaseGraphicsResources(vtkWindow *window);
+  void ReleaseGraphicsResources(vtkWindow *window) VTK_OVERRIDE;
 
-  virtual void Render(vtkRenderer *renderer, vtkVolume *volume);
+  void Render(vtkRenderer *renderer, vtkVolume *volume) VTK_OVERRIDE;
 
   //@{
   /**
@@ -75,16 +76,16 @@ public:
    * Return true if the rendering context provides
    * the nececessary functionality to use this class.
    */
-  virtual bool IsSupported(vtkRenderWindow *context);
+  bool IsSupported(vtkRenderWindow *context) VTK_OVERRIDE;
 
 protected:
   vtkOpenGLProjectedTetrahedraMapper();
-  ~vtkOpenGLProjectedTetrahedraMapper();
+  ~vtkOpenGLProjectedTetrahedraMapper() VTK_OVERRIDE;
 
   void Initialize(vtkRenderer *ren);
   bool Initialized;
   int  CurrentFBOWidth, CurrentFBOHeight;
-  bool AllocateFBOResources(vtkRenderer *ren);
+  bool AllocateFOResources(vtkRenderer *ren);
   bool CanDoFloatingPointFrameBuffer;
   bool FloatingPointFrameBufferResourcesAllocated;
   bool UseFloatingPointFrameBuffer;
@@ -109,6 +110,8 @@ protected:
 
   vtkVolumeProperty *LastProperty;
 
+  vtkOpenGLFramebufferObject *Framebuffer;
+
   float *SqrtTable;
   float SqrtTableBias;
 
@@ -119,6 +122,12 @@ protected:
                           const float inverse_projection_mat[16],
                           int use_linear_depth_correction,
                           float linear_depth_correction);
+
+  /**
+   * Update progress ensuring that OpenGL state is saved and restored before
+   * invoking progress.
+   */
+  void GLSafeUpdateProgress(double value, vtkOpenGLRenderWindow* context);
 
 private:
   vtkOpenGLProjectedTetrahedraMapper(const vtkOpenGLProjectedTetrahedraMapper &) VTK_DELETE_FUNCTION;

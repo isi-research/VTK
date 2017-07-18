@@ -53,7 +53,7 @@
 #include "vtkImageProcessingPass.h"
 
 class vtkDepthPeelingPassLayerList; // Pimpl
-class vtkFrameBufferObject;
+class vtkOpenGLFramebufferObject;
 class vtkOpenGLHelper;
 class vtkOpenGLRenderWindow;
 class vtkTextureObject;
@@ -63,20 +63,20 @@ class VTKRENDERINGOPENGL2_EXPORT vtkGaussianBlurPass : public vtkImageProcessing
 public:
   static vtkGaussianBlurPass *New();
   vtkTypeMacro(vtkGaussianBlurPass,vtkImageProcessingPass);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   /**
    * Perform rendering according to a render state \p s.
    * \pre s_exists: s!=0
    */
-  virtual void Render(const vtkRenderState *s);
+  void Render(const vtkRenderState *s) VTK_OVERRIDE;
 
   /**
    * Release graphics resources and ask components to release their own
    * resources.
    * \pre w_exists: w!=0
    */
-  void ReleaseGraphicsResources(vtkWindow *w);
+  void ReleaseGraphicsResources(vtkWindow *w) VTK_OVERRIDE;
 
  protected:
   /**
@@ -87,20 +87,17 @@ public:
   /**
    * Destructor.
    */
-  virtual ~vtkGaussianBlurPass();
+  ~vtkGaussianBlurPass() VTK_OVERRIDE;
 
   /**
    * Graphics resources.
    */
-  vtkFrameBufferObject *FrameBufferObject;
+  vtkOpenGLFramebufferObject *FrameBufferObject;
   vtkTextureObject *Pass1; // render target for the scene
   vtkTextureObject *Pass2; // render target for the horizontal pass
 
   // Structures for the various cell types we render.
   vtkOpenGLHelper *BlurProgram;
-
-  bool Supported;
-  bool SupportProbed;
 
  private:
   vtkGaussianBlurPass(const vtkGaussianBlurPass&) VTK_DELETE_FUNCTION;

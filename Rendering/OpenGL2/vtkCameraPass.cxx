@@ -21,7 +21,7 @@
 #include "vtkOpenGLRenderWindow.h"
 #include "vtkMatrix4x4.h"
 #include "vtkCamera.h"
-#include "vtkFrameBufferObject.h"
+#include "vtkOpenGLFramebufferObject.h"
 #include "vtkOpenGLError.h"
 
 vtkStandardNewMacro(vtkCameraPass);
@@ -104,13 +104,21 @@ void vtkCameraPass::Render(const vtkRenderState *s)
   int lowerLeft[2];
   int usize;
   int vsize;
-  vtkFrameBufferObject *fbo=vtkFrameBufferObject::SafeDownCast(s->GetFrameBuffer());
+  vtkOpenGLFramebufferObject *fbo=vtkOpenGLFramebufferObject::SafeDownCast(s->GetFrameBuffer());
 
   vtkOpenGLRenderWindow *win=vtkOpenGLRenderWindow::SafeDownCast(ren->GetRenderWindow());
   win->MakeCurrent();
 
   if(fbo==0)
   {
+    unsigned int dfbo = win->GetDefaultFrameBufferId();
+    if (dfbo)
+    {
+      // If the render window is using an FBO to render into, we ensure that
+      // it's selected.
+      glBindFramebuffer(GL_FRAMEBUFFER, dfbo);
+    }
+
     // find out if we should stereo render
     bool stereo = win->GetStereoRender()==1;
     this->GetTiledSizeAndOrigin(s, &usize,&vsize,lowerLeft,lowerLeft+1);

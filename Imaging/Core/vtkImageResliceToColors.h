@@ -87,22 +87,22 @@ public:
    * When determining the modified time of the filter,
    * this check the modified time of the transform and matrix.
    */
-  vtkMTimeType GetMTime();
+  vtkMTimeType GetMTime() VTK_OVERRIDE;
 
 protected:
   vtkImageResliceToColors();
-  ~vtkImageResliceToColors();
+  ~vtkImageResliceToColors() VTK_OVERRIDE;
 
   vtkScalarsToColors *LookupTable;
   vtkScalarsToColors *DefaultLookupTable;
   int OutputFormat;
   int Bypass;
 
-  int ConvertScalarInfo(int &scalarType, int &numComponents);
+  int ConvertScalarInfo(int &scalarType, int &numComponents) VTK_OVERRIDE;
 
   void ConvertScalars(void *inPtr, void *outPtr, int inputType,
                       int inputNumComponents, int count,
-                      int idX, int idY, int idZ, int threadId);
+                      int idX, int idY, int idZ, int threadId) VTK_OVERRIDE;
 
 private:
   vtkImageResliceToColors(const vtkImageResliceToColors&) VTK_DELETE_FUNCTION;

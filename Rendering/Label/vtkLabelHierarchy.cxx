@@ -525,7 +525,7 @@ public:
   {
   public:
     bool operator()(const vtkHierarchyNode & a,
-                    const vtkHierarchyNode & b)
+                    const vtkHierarchyNode & b) const
     {
       if (a.Level != b.Level)
       {
@@ -948,7 +948,7 @@ void vtkLabelHierarchyQuadtreeIterator::Next()
   if ( this->LabelIterator == this->Node->value().end() )
   {
     this->BoxNode();
-    while ( this->Queue.size() )
+    while ( !this->Queue.empty() )
     {
       this->Node = this->Queue.front();
       this->Queue.pop_front();
@@ -1322,7 +1322,7 @@ void vtkLabelHierarchyOctreeQueueIterator::Next()
   if ( this->LabelIterator == this->Node->value().end() )
   {
     this->BoxNode();
-    while ( this->Queue.size() )
+    while ( !this->Queue.empty() )
     {
       this->Node = this->Queue.front();
       this->Queue.pop_front();

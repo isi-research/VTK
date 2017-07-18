@@ -123,7 +123,7 @@ int vtkExodusIICache::ReduceToSize( double newSize )
 #endif // VTK_EXO_DBG_CACHE
       if ( this->Size <= 0 )
       {
-        if ( this->Cache.size() == 0 )
+        if ( this->Cache.empty() )
           this->Size = 0.;
         else
           this->RecomputeSize(); // oops, FP roundoff
@@ -141,7 +141,7 @@ int vtkExodusIICache::ReduceToSize( double newSize )
     this->LRU.pop_back();
   }
 
-  if ( this->Cache.size() == 0 )
+  if ( this->Cache.empty() )
   {
     this->Size = 0;
   }
@@ -190,7 +190,7 @@ void vtkExodusIICache::Insert( vtkExodusIICacheKey& key, vtkDataArray* value )
   //printCache( this->Cache, this->LRU );
 }
 
-vtkDataArray*& vtkExodusIICache::Find( vtkExodusIICacheKey key )
+vtkDataArray*& vtkExodusIICache::Find( const vtkExodusIICacheKey& key )
 {
   static vtkDataArray* dummy = 0;
 
@@ -206,7 +206,7 @@ vtkDataArray*& vtkExodusIICache::Find( vtkExodusIICacheKey key )
   return dummy;
 }
 
-int vtkExodusIICache::Invalidate( vtkExodusIICacheKey key )
+int vtkExodusIICache::Invalidate( const vtkExodusIICacheKey& key )
 {
   vtkExodusIICacheRef it = this->Cache.find( key );
   if ( it != this->Cache.end() )
@@ -224,7 +224,7 @@ int vtkExodusIICache::Invalidate( vtkExodusIICacheKey key )
 
     if ( this->Size <= 0 )
     {
-      if ( this->Cache.size() == 0 )
+      if ( this->Cache.empty() )
         this->Size = 0.;
       else
         this->RecomputeSize(); // oops, FP roundoff
@@ -235,7 +235,7 @@ int vtkExodusIICache::Invalidate( vtkExodusIICacheKey key )
   return 0;
 }
 
-int vtkExodusIICache::Invalidate( vtkExodusIICacheKey key, vtkExodusIICacheKey pattern )
+int vtkExodusIICache::Invalidate( const vtkExodusIICacheKey& key, const vtkExodusIICacheKey& pattern )
 {
   vtkExodusIICacheRef it;
   int nDropped = 0;
@@ -262,7 +262,7 @@ int vtkExodusIICache::Invalidate( vtkExodusIICacheKey key, vtkExodusIICacheKey p
 
     if ( this->Size <= 0 )
     {
-      if ( this->Cache.size() == 0 )
+      if ( this->Cache.empty() )
         this->Size = 0.;
       else
         this->RecomputeSize(); // oops, FP roundoff

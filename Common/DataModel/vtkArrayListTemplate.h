@@ -29,7 +29,7 @@
  * performs the initial magic of constructing input and output arrays. Then
  * the input attributes, and output attributes, are passed to initialize the
  * internal structures. Essentially these internal structures are pairs of
- * arrays of the same type, which can be efficently accessed and
+ * arrays of the same type, which can be efficiently accessed and
  * assigned. The operations on these array pairs (e.g., interpolation) occur
  * using a typeless, virtual dispatch base class.
  *
@@ -226,6 +226,10 @@ struct ArrayList
                  vtkDataSetAttributes *outPD, double nullValue=0.0,
                  bool promote=true);
 
+  // Add an array that interpolates from its own attribute values
+  void AddSelfInterpolatingArrays(vtkIdType numOutPts, vtkDataSetAttributes *attr,
+                                  double nullValue=0.0);
+
   // Add a pair of arrays (manual insertion). Returns the output array created,
   // if any. No array may be created if \c inArray was previously marked as
   // excluded using ExcludeArray().
@@ -300,7 +304,7 @@ struct ArrayList
   // Return the number of arrays
   vtkIdType GetNumberOfArrays()
   {
-      return Arrays.size();
+    return static_cast<vtkIdType>(Arrays.size());
   }
 
 };

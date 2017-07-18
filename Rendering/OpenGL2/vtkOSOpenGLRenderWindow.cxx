@@ -102,9 +102,6 @@ vtkOSOpenGLRenderWindow::vtkOSOpenGLRenderWindow()
   this->OwnWindow = 0;
 
   this->Internal = new vtkOSOpenGLRenderWindowInternal(this);
-
-  this->Capabilities = 0;
-
 }
 
 // free up memory & close the window
@@ -211,9 +208,6 @@ void vtkOSOpenGLRenderWindow::CreateOffScreenWindow(int width, int height)
   this->Size[1] = height;
 
   this->MakeCurrent();
-
-  const GLubyte *str = glGetString(GL_VERSION);
-  cout << "GL_Version: " << reinterpret_cast<const char*>(str) << endl;
 
   // tell our renderers about us
   vtkRenderer* ren;

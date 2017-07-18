@@ -78,7 +78,7 @@ int vtkKMeansStatistics::InitializeDataAndClusterCenters(vtkTable* inParameters,
     }
   }
 
-  if( this->Internals->Requests.size() == 0 )
+  if( this->Internals->Requests.empty() )
   {
     vtkErrorMacro( "No requests were made." );
     return 0;
@@ -193,7 +193,7 @@ void vtkKMeansStatistics::CreateInitialClusterCenters( vtkIdType numToAllocate,
     }
   }
 
-  if( this->Internals->Requests.size() == 0 )
+  if( this->Internals->Requests.empty() )
   {
     vtkErrorMacro( "No requests were made." );
     return;
@@ -588,14 +588,14 @@ void vtkKMeansStatistics::Derive( vtkMultiBlockDataSet* outMeta )
   localRank->SetNumberOfValues( totalClusterRunIDs->GetNumberOfTuples() );
   int rankID=1;
 
-  for( std::multimap<double, vtkIdType>::iterator itr = globalErrorMap.begin(); itr != globalErrorMap.end(); itr++ )
+  for( std::multimap<double, vtkIdType>::iterator itr = globalErrorMap.begin(); itr != globalErrorMap.end(); ++itr )
   {
     globalRank->SetValue( itr->second, rankID++ ) ;
   }
-  for( std::map<vtkIdType, std::multimap<double, vtkIdType> >::iterator itr = localErrorMap.begin(); itr != localErrorMap.end(); itr++ )
+  for( std::map<vtkIdType, std::multimap<double, vtkIdType> >::iterator itr = localErrorMap.begin(); itr != localErrorMap.end(); ++itr )
   {
     rankID=1;
-    for( std::multimap<double, vtkIdType>::iterator rItr = itr->second.begin(); rItr != itr->second.end(); rItr++ )
+    for( std::multimap<double, vtkIdType>::iterator rItr = itr->second.begin(); rItr != itr->second.end(); ++rItr )
     {
       localRank->SetValue( rItr->second, rankID++ ) ;
     }

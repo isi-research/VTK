@@ -389,10 +389,10 @@ public:
         p = inv_n * xit->second;
         marginalPDFs[sit->first][xit->first] = p;
 
-        array->SetNumberOfValues (xit->first.size ());
+        array->SetNumberOfValues (static_cast<vtkIdType>(xit->first.size()));
         for (size_t i = 0; i < xit->first.size (); i ++)
         {
-          array->SetValue (i, xit->first[i]);
+          array->SetValue (static_cast<int>(i), xit->first[i]);
         }
 
         // Insert marginal cardinalities and probabilities
@@ -1675,7 +1675,7 @@ void vtkContingencyStatistics::Test( vtkTable* inData,
     }
 
     // Eliminating the case where one or both marginal counts are not provided in the model
-    if ( ! ek[0].size() )
+    if ( ek[0].empty() )
     {
       vtkErrorMacro( "Incomplete input: missing marginal count for "
                      << varNameX
@@ -1683,7 +1683,7 @@ void vtkContingencyStatistics::Test( vtkTable* inData,
       return;
     }
 
-    if ( ! ek[1].size() )
+    if ( ek[1].empty() )
     {
       vtkErrorMacro( "Incomplete input: missing marginal count for "
                      << varNameY
@@ -1719,7 +1719,8 @@ void vtkContingencyStatistics::Test( vtkTable* inData,
     } // xit
 
     // Degrees of freedom
-    vtkIdType d = ( ek[0].size() - 1 ) * ( ek[1].size() - 1 );
+    vtkIdType d = static_cast<vtkIdType>(
+      ( ek[0].size() - 1 ) * ( ek[1].size() - 1 ));
 
     // Insert variable name and calculated Jarque-Bera statistic
     // NB: R will be invoked only once at the end for efficiency

@@ -128,7 +128,7 @@ public:
   void RegisterCell(const int& partType,const vtkIdType &matId,
                     const vtkIdType &npts)
   {
-    if(this->Info[partType].size() != 0)
+    if(!this->Info[partType].empty())
     {
       PartInfo *info = &this->Info[partType].back();
       if(info->partId == matId)
@@ -175,7 +175,7 @@ public:
     //that point to the first element of each part type info
     for(int i=0; i < LSDynaMetaData::NUM_CELL_TYPES; ++i)
     {
-      if(this->Info[i].size()>0)
+      if(!this->Info[i].empty())
       {
         PartInsertion partIt(&this->Info[i]);
         this->CellInsertionIterators[i] = partIt;
@@ -359,7 +359,7 @@ public:
   void InitCellIteration(const int &partType, int pos=0)
   {
     this->CellIteratorEnd = this->Info[partType].end();
-    if(this->Info[partType].size()>0)
+    if(!this->Info[partType].empty())
     {
       this->CellIterator = this->Info[partType].begin();
     }
@@ -505,7 +505,7 @@ void vtkLSDynaPartCollection::InitCollection(LSDynaMetaData *metaData,
   //reserve enough space for the grids. Each node
   //will have a part allocated, since we don't know yet
   //how the cells map to parts.
-  this->Storage = new LSDynaPartStorage(metaData->PartIds.size());
+  this->Storage = new LSDynaPartStorage(static_cast<vtkIdType>(metaData->PartIds.size()));
 
   this->MinIds = new vtkIdType[LSDynaMetaData::NUM_CELL_TYPES];
   this->MaxIds = new vtkIdType[LSDynaMetaData::NUM_CELL_TYPES];

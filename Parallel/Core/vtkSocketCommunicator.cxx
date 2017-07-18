@@ -43,7 +43,7 @@ public:
 
   bool HasBufferredMessages()
   {
-    return this->Buffer.size() != 0;
+    return !this->Buffer.empty();
   }
 
   bool HasMessage(int tag)
@@ -53,7 +53,7 @@ public:
     {
       return false;
     }
-    return (iter->second.size() != 0);
+    return (!iter->second.empty());
   }
 
   void Push(int tag, int numchars, char* data)
@@ -66,7 +66,7 @@ public:
   void Pop(int tag)
   {
     this->Buffer[tag].pop_front();
-    if (this->Buffer[tag].size() == 0)
+    if (this->Buffer[tag].empty())
     {
       this->Buffer.erase(tag);
     }
@@ -194,7 +194,6 @@ int vtkSocketCommunicator::GetIsConnected()
 void vtkSocketCommunicator::SetNumberOfProcesses(int vtkNotUsed(num))
 {
   vtkErrorMacro("Can not change the number of processes.");
-  return;
 }
 
 //----------------------------------------------------------------------------
@@ -1086,6 +1085,11 @@ int vtkSocketCommunicator::CheckForErrorInternal(int id)
   else if(id >= this->NumberOfProcesses)
   {
     vtkSocketCommunicatorErrorMacro("No port for process " << id << " exists.");
+    return 1;
+  }
+  else if (!this->Socket)
+  {
+    vtkSocketCommunicatorErrorMacro("Socket does not exist.");
     return 1;
   }
   return 0;

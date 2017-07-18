@@ -22,6 +22,7 @@
 #include "vtkPropCollection.h"
 #include "vtkRenderWindowInteractor.h"
 #include "vtkRendererCollection.h"
+#include "vtkRenderTimerLog.h"
 #include "vtkTimerLog.h"
 #include "vtkTransform.h"
 #include "vtkGraphicsFactory.h"
@@ -88,6 +89,7 @@ vtkRenderWindow::vtkRenderWindow()
   this->AbortCheckTime = 0.0;
   this->CapturingGL2PSSpecialProps = 0;
   this->MultiSamples = 0;
+  this->UseSRGBColorSpace = false;
 
 #ifdef VTK_USE_OFFSCREEN
   this->OffScreenRendering = 1;
@@ -317,6 +319,14 @@ void vtkRenderWindow::Render()
     this->Interactor->Initialize();
   }
 
+  vtkRenderTimerLog::ScopedEventLogger event;
+  if (this->RenderTimer->GetLoggingEnabled())
+  {
+    this->Start(); // Ensure context exists
+    this->RenderTimer->MarkFrame();
+    event = this->RenderTimer->StartScopedEvent("vtkRenderWindow::Render");
+  }
+
   // CAUTION:
   // This method uses this->GetSize() and allocates buffers using that size.
   // Remember that GetSize() will returns a size scaled by the TileScale factor.
@@ -375,10 +385,7 @@ void vtkRenderWindow::Render()
           *p1 += *p2; p1++; p2++;
         }
       }
-      if (p3)
-      {
-        delete [] p3;
-      }
+      delete [] p3;
     }
 
     // if this is the last sub frame then convert back into unsigned char
@@ -476,6 +483,9 @@ void vtkRenderWindow::Render()
 
   delete [] this->ResultFrame;
   this->ResultFrame = NULL;
+
+  // Stop the render timer before invoking the EndEvent.
+  event.Stop();
 
   this->InRender = 0;
   this->InvokeEvent(vtkCommand::EndEvent,NULL);
@@ -892,6 +902,8 @@ void vtkRenderWindow::PrintSelf(ostream& os, vtkIndent indent)
   os << indent << "Number of Layers: " << this->NumberOfLayers << "\n";
   os << indent << "AccumulationBuffer Size " << this->AccumulationBufferSize << "\n";
   os << indent << "AlphaBitPlanes: " << (this->AlphaBitPlanes ? "On" : "Off")
+     << endl;
+  os << indent << "UseSRGBColorSpace: " << (this->UseSRGBColorSpace ? "On" : "Off")
      << endl;
 
   os << indent << "AnaglyphColorSaturation: "

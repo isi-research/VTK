@@ -11,7 +11,7 @@ macro(VTK_WRAP_HIERARCHY module_name OUTPUT_DIR SOURCES)
   endif()
 
   # collect the common wrapper-tool arguments
-  if(NOT CMAKE_VERSION VERSION_LESS 3.1 AND NOT VTK_ENABLE_KITS)
+  if(NOT VTK_ENABLE_KITS)
     # write wrapper-tool arguments to a file
     set(_args_file ${module_name}Hierarchy.$<CONFIGURATION>.args)
     file(GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/${_args_file} CONTENT "
@@ -126,9 +126,9 @@ $<$<BOOL:$<TARGET_PROPERTY:${module_name},INCLUDE_DIRECTORIES>>:
   set(OTHER_HIERARCHY_FILES)
   # Don't use ${module_name}_DEPENDS. That list also includes COMPILE_DEPENDS,
   # which aren't library dependencies, merely dependencies for generators and
-  # such. The dependecies specified under "DEPENDS" in the vtk_module(..) macro
-  # call are located under _LINK_DEPENDS.
-  foreach(dep ${${module_name}_LINK_DEPENDS})
+  # such. Instead, use _WRAP_DEPENDS which includes the DEPENDS and the
+  # PRIVATE_DEPENDS from module.cmake, but not COMPILE_DEPENDS.
+  foreach(dep ${${module_name}_WRAP_DEPENDS})
     if(NOT "${module_name}" STREQUAL "${dep}")
       if(NOT ${dep}_EXCLUDE_FROM_WRAPPING)
         list(APPEND OTHER_HIERARCHY_FILES "${${dep}_WRAP_HIERARCHY_FILE}")

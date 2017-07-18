@@ -17,6 +17,7 @@ PURPOSE.  See the above copyright notice for more information.
 #include "vtkAlgorithm.h"
 #include "vtkAlgorithmOutput.h"
 #include "vtkCompositeDataIterator.h"
+#include "vtkFieldData.h"
 #include "vtkImageData.h"
 #include "vtkInformationDoubleKey.h"
 #include "vtkInformationExecutivePortKey.h"
@@ -72,15 +73,6 @@ vtkCompositeDataPipeline::vtkCompositeDataPipeline()
   // Algorithms process this request after it is forwarded.
   this->InformationRequest->Set(vtkExecutive::ALGORITHM_AFTER_FORWARD(), 1);
 
-  this->UpdateExtentRequest = vtkInformation::New();
-  this->UpdateExtentRequest->Set(
-    vtkStreamingDemandDrivenPipeline::REQUEST_UPDATE_EXTENT());
-  // The request is forwarded upstream through the pipeline.
-  this->UpdateExtentRequest->Set(
-    vtkExecutive::FORWARD_DIRECTION(), vtkExecutive::RequestUpstream);
-  // Algorithms process this request before it is forwarded.
-  this->UpdateExtentRequest->Set(vtkExecutive::ALGORITHM_BEFORE_FORWARD(), 1);
-
   this->DataRequest = vtkInformation::New();
   this->DataRequest->Set(REQUEST_DATA());
   // The request is forwarded upstream through the pipeline.
@@ -98,7 +90,6 @@ vtkCompositeDataPipeline::~vtkCompositeDataPipeline()
   this->GenericRequest->Delete();
   this->DataObjectRequest->Delete();
   this->InformationRequest->Delete();
-  this->UpdateExtentRequest->Delete();
   this->DataRequest->Delete();
 }
 
@@ -235,6 +226,7 @@ bool vtkCompositeDataPipeline::ShouldIterateOverInput(vtkInformationVector** inI
         // the filter upstream will iterate
 
         if (strcmp(inputType, "vtkCompositeDataSet") == 0 ||
+            strcmp(inputType, "vtkDataObjectTree") == 0 ||
             strcmp(inputType, "vtkHierarchicalBoxDataSet") == 0 ||
             strcmp(inputType, "vtkOverlappingAMR") == 0 ||
             strcmp(inputType, "vtkNonOverlappingAMR") == 0 ||
@@ -366,6 +358,10 @@ void vtkCompositeDataPipeline::ExecuteSimpleAlgorithm(
   {
     compositeOutput->PrepareForNewData();
     compositeOutput->CopyStructure(input);
+    if (input && input->GetFieldData())
+    {
+      compositeOutput->GetFieldData()->PassData(input->GetFieldData());
+    }
 
     vtkSmartPointer<vtkInformation> r =
       vtkSmartPointer<vtkInformation>::New();
@@ -1049,7 +1045,7 @@ void vtkCompositeDataPipeline::MarkOutputsGenerated(
         size_t count = outInfo->Length(UPDATE_COMPOSITE_INDICES());
         int* indices = new int[count];
         // assume the source produced the blocks it was asked for:
-        // the indices recieved are what was requested
+        // the indices received are what was requested
         outInfo->Get(UPDATE_COMPOSITE_INDICES(),indices);
         outInfo->Set(DATA_COMPOSITE_INDICES(), indices,
           static_cast<int>(count));

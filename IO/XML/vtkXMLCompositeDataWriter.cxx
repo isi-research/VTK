@@ -20,6 +20,7 @@
 #include "vtkDataObjectTreeIterator.h"
 #include "vtkErrorCode.h"
 #include "vtkExecutive.h"
+#include "vtkFieldData.h"
 #include "vtkGarbageCollector.h"
 #include "vtkHierarchicalBoxDataSet.h"
 #include "vtkImageData.h"
@@ -324,6 +325,22 @@ int vtkXMLCompositeDataWriter::WriteData()
     this->Internal->Root->PrintXML(os, indent);
   }
 
+  int dataMode = this->DataMode;
+  if (dataMode == vtkXMLWriter::Ascii)
+  {
+    this->DataMode = vtkXMLWriter::Ascii;
+  }
+  else
+  {
+    this->DataMode = vtkXMLWriter::Binary;
+  }
+  vtkFieldData *fieldData = this->GetInput()->GetFieldData();
+  if (fieldData && fieldData->GetNumberOfArrays())
+  {
+    this->WriteFieldDataInline(fieldData, indent);
+  }
+  this->DataMode = dataMode;
+
   return this->EndFile();
 }
 
@@ -498,7 +515,7 @@ void vtkXMLCompositeDataWriter::SplitFileName()
   }
 
   // Split the extension from the file name.
-  pos = name.find_last_of(".");
+  pos = name.find_last_of('.');
   if (pos != name.npos)
   {
     this->Internal->FilePrefix = name.substr(0, pos);

@@ -57,6 +57,7 @@ public:
   //@{
   /**
    * Set/Get the position in screen coordinates of the rendering window.
+   * Measured in pixels.
    */
   virtual int *GetPosition();
   virtual void SetPosition(int,int);
@@ -74,7 +75,7 @@ public:
 
   /**
    * GetSize() returns the size * this->TileScale, whereas this method returns
-   * the size without multiplying with the tile scale.
+   * the size without multiplying with the tile scale. Measured in pixels.
    */
   int *GetActualSize();
 
@@ -141,9 +142,9 @@ public:
    * the diagonal.
    */
   virtual unsigned char *GetPixelData(int x, int y, int x2, int y2,
-                                      int front) = 0;
+                                      int front, int right=0) = 0;
   virtual int GetPixelData(int x, int y, int x2, int y2, int front,
-                           vtkUnsignedCharArray *data) = 0;
+                           vtkUnsignedCharArray *data, int right=0) = 0;
   //@}
 
   //@{

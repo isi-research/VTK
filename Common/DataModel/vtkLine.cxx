@@ -135,10 +135,10 @@ int vtkLine::Intersection (double a1[3], double a2[3],
     double* l2[4] = {b2,b2,a2,a2};
     double* uv1[4] = {&v,&v,&u,&u};
     double* uv2[4] = {&u,&u,&v,&v};
-    double dist,t;
+    double t=0;
     for (unsigned i=0;i<4;i++)
     {
-      dist = vtkLine::DistanceToLine(p[i],l1[i],l2[i],t);
+      double dist = vtkLine::DistanceToLine(p[i],l1[i],l2[i],t);
       if (dist < minDist)
       {
         minDist = dist;
@@ -299,7 +299,10 @@ void vtkLine::Contour(double value, vtkDataArray *cellScalars,
       }
     }
     newCellId = verts->InsertNextCell(1,pts);
-    outCd->CopyData(inCd,cellId,newCellId);
+    if (outCd)
+    {
+      outCd->CopyData(inCd, cellId, newCellId);
+    }
   }
 }
 
@@ -729,6 +732,7 @@ void vtkLine::Derivatives(int vtkNotUsed(subId),
 
 //----------------------------------------------------------------------------
 // support line clipping
+namespace { //required so we don't violate ODR
 typedef int LINE_LIST;
 typedef struct {
        LINE_LIST lines[2];
@@ -739,6 +743,7 @@ static LINE_CASES lineCases[] = {
 {{100,   1}},   // 1
 {{  0, 101}},   // 2
 {{100, 101}}};  // 3
+}
 
 // Clip this line using scalar value provided. Like contouring, except
 // that it cuts the line to produce other lines.

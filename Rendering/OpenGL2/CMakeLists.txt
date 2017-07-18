@@ -21,8 +21,9 @@ set(Module_SRCS
   vtkDepthOfFieldPass.cxx
   vtkDepthImageProcessingPass.cxx
   vtkDepthPeelingPass.cxx
+  vtkDualDepthPeelingPass.cxx
   vtkEDLShading.cxx
-  vtkFrameBufferObject.cxx
+  vtkFramebufferPass.cxx
   vtkGaussianBlurPass.cxx
   vtkGenericOpenGLRenderWindow.cxx
   vtkHiddenLineRemovalPass.cxx
@@ -35,6 +36,7 @@ set(Module_SRCS
   vtkOpenGLBufferObject.cxx
   vtkOpenGLCamera.cxx
   vtkOpenGLFXAAFilter.cxx
+  vtkOpenGLFramebufferObject.cxx
   vtkOpenGLGL2PSHelper.cxx
   vtkOpenGLGlyph3DHelper.cxx
   vtkOpenGLGlyph3DMapper.cxx
@@ -52,10 +54,12 @@ set(Module_SRCS
   vtkOpenGLProperty.cxx
   vtkOpenGLRenderPass.cxx
   vtkOpenGLRenderTimer.cxx
+  vtkOpenGLRenderTimerLog.cxx
   vtkOpenGLRenderUtilities.cxx
   vtkOpenGLRenderWindow.cxx
   vtkOpenGLRenderer.cxx
   vtkOpenGLShaderCache.cxx
+  vtkOpenGLSkybox.cxx
   vtkOpenGLSphereMapper.cxx
   vtkOpenGLStickMapper.cxx
   vtkOpenGLTextActor.cxx
@@ -64,10 +68,14 @@ set(Module_SRCS
   vtkOpenGLTexture.cxx
   vtkOpenGLVertexArrayObject.cxx
   vtkOpenGLVertexBufferObject.cxx
+  vtkOpenGLVertexBufferObjectCache.cxx
+  vtkOpenGLVertexBufferObjectGroup.cxx
   vtkOverlayPass.cxx
+  vtkPixelBufferObject.cxx
   vtkPointFillPass.cxx
   vtkRenderPassCollection.cxx
   vtkRenderStepsPass.cxx
+  vtkRenderbuffer.cxx
   vtkSSAAPass.cxx
   vtkSequencePass.cxx
   vtkShader.cxx
@@ -79,30 +87,14 @@ set(Module_SRCS
   vtkTextureUnitManager.cxx
   vtkTransformFeedback.cxx
   vtkTranslucentPass.cxx
+  vtkValuePass.cxx
   vtkVolumetricPass.cxx
   )
 
 if (NOT DEFINED OPENGL_ES_VERSION)
   set(Module_SRCS ${Module_SRCS}
     vtkDataTransferHelper.cxx
-    vtkDualDepthPeelingPass.cxx # Needs GL_MAX
-    vtkFrameBufferObject2.cxx
-    vtkPixelBufferObject.cxx
-    vtkRenderbuffer.cxx
-    vtkValuePass.cxx
-    vtkValuePassHelper.cxx
     )
-else()
-  if (${OPENGL_ES_VERSION} MATCHES 3.0)
-    set(Module_SRCS ${Module_SRCS}
-      vtkDualDepthPeelingPass.cxx # Needs GL_MAX
-      vtkFrameBufferObject2.cxx
-      vtkPixelBufferObject.cxx
-      vtkRenderbuffer.cxx
-      vtkValuePass.cxx
-      vtkValuePassHelper.cxx
-      )
-  endif()
 endif()
 
 set(${vtk-module}_HDRS
@@ -114,7 +106,7 @@ set(${vtk-module}_HDRS
 
 set_source_files_properties(
   ${CMAKE_CURRENT_BINARY_DIR}/${vtk-module}ObjectFactory.cxx
-  vtkFrameBufferObject
+  vtkOpenGLFramebufferObject
   vtkOpenGLBufferObject
   vtkOpenGLGL2PSHelper
   vtkOpenGLGlyph3DHelper
@@ -125,12 +117,12 @@ set_source_files_properties(
   vtkOpenGLShaderCache
   vtkOpenGLVertexArrayObject
   vtkOpenGLVertexBufferObject
+  vtkOpenGLVertexBufferObjectCache
   vtkPixelBufferObject
   vtkRenderbuffer
   vtkTextureObject
   vtkTextureUnitManager
   vtkTransformFeedback
-  vtkValuePassHelper
   WRAP_EXCLUDE)
 
 set_source_files_properties(
@@ -139,7 +131,6 @@ set_source_files_properties(
   vtkOpenGLGlyph3DHelper
   vtkOpenGLHelper
   vtkOpenGLRenderTimer
-  vtkValuePassHelper
   PROPERTIES WRAP_EXCLUDE_PYTHON 1)
 
 set_source_files_properties(
@@ -220,6 +211,8 @@ set(opengl_overrides
   PolyDataMapper2D
   Property
   Renderer
+  RenderTimerLog
+  Skybox
   TextActor
   TextActor3D
   TextMapper

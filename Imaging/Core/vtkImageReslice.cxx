@@ -45,7 +45,7 @@
 #ifdef _MSC_VER
 # include <stddef.h>
 #else
-# include <stdint.h>
+# include <cstdint>
 #endif
 
 vtkStandardNewMacro(vtkImageReslice);
@@ -1063,6 +1063,7 @@ int vtkImageReslice::RequestInformation(
     }
     else
     {
+      c = inCenter[i];
       s = inSpacing[i];
       d = (inWholeExt[2*i+1] - inWholeExt[2*i])*s;
       e = inWholeExt[2*i];

@@ -103,8 +103,9 @@ void vtkRIBExporter::WriteData()
     return;
   }
 
-  char *ribFileName = new char [strlen (this->FilePrefix) + strlen (".rib") + 1];
-  sprintf (ribFileName, "%s%s", this->FilePrefix, ".rib");
+  size_t ribFileNameSize = strlen (this->FilePrefix) + strlen (".rib") + 1;
+  char *ribFileName = new char [ribFileNameSize];
+  snprintf (ribFileName, ribFileNameSize, "%s%s", this->FilePrefix, ".rib");
 
   this->FilePtr = fopen (ribFileName, "w");
   if (this->FilePtr == NULL)
@@ -223,8 +224,9 @@ void vtkRIBExporter::WriteHeader (vtkRenderer *aRen)
 {
 
   // create a FileName to hold the renderered image
-  char *imageFileName = new char [strlen (this->FilePrefix) + strlen (".tif") + 1];
-  sprintf (imageFileName, "%s%s", this->FilePrefix, ".tif");
+  size_t length = strlen (this->FilePrefix) + strlen (".tif") + 1;
+  char *imageFileName = new char [length];
+  snprintf (imageFileName, length, "%s%s", this->FilePrefix, ".tif");
 
   fprintf (this->FilePtr, "FrameBegin %d\n", 1);
   fprintf (this->FilePtr, "Display \"%s\" \"file\" \"rgb\"\n", imageFileName);

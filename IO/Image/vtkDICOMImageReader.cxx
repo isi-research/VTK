@@ -21,10 +21,10 @@
 #include "vtkPointData.h"
 #include "vtkErrorCode.h"
 
+#include <vtksys/SystemTools.hxx>
+
 #include <vector>
 #include <string>
-
-#include <sys/stat.h>
 
 #include "DICOMAppHelper.h"
 #include "DICOMParser.h"
@@ -102,7 +102,7 @@ int vtkDICOMImageReader::CanReadFile(const char* fname)
   }
   else
   {
-    vtkErrorMacro("DICOMParser couldn't parse : " << fname);
+    vtkWarningMacro("DICOMParser couldn't parse : " << fname);
     return 0;
   }
 }
@@ -117,8 +117,8 @@ void vtkDICOMImageReader::ExecuteInformation()
 
   if (this->FileName)
   {
-    struct stat fs;
-    if ( stat(this->FileName, &fs) )
+    vtksys::SystemTools::Stat_t fs;
+    if (vtksys::SystemTools::Stat(this->FileName, &fs))
     {
       vtkErrorMacro("Unable to open file " << this->FileName );
       return;
@@ -180,7 +180,7 @@ void vtkDICOMImageReader::ExecuteInformation()
 
     for (iter = this->DICOMFileNames->begin();
          iter != this->DICOMFileNames->end();
-         iter++)
+         ++iter)
     {
       const char* fn = iter->c_str();
       vtkDebugMacro( << "Trying : " << fn);
@@ -210,13 +210,13 @@ void vtkDICOMImageReader::ExecuteInformation()
 
     //this->AppHelper->OutputSeries();
 
-    if (sortedFiles.size() > 0)
+    if (!sortedFiles.empty())
     {
       this->DICOMFileNames->clear();
       std::vector<std::pair<float, std::string> >::iterator siter;
       for (siter = sortedFiles.begin();
            siter != sortedFiles.end();
-           siter++)
+           ++siter)
       {
         vtkDebugMacro(<< "Sorted filename : " << (*siter).second.c_str());
         vtkDebugMacro(<< "Adding file " << (*siter).second.c_str() << " at slice : " << (*siter).first);
@@ -238,7 +238,7 @@ void vtkDICOMImageReader::ExecuteDataWithInformation(vtkDataObject *output,
 {
   vtkImageData *data = this->AllocateOutputData(output, outInfo);
 
-  if (!this->FileName && this->DICOMFileNames->size() == 0)
+  if (!this->FileName && this->DICOMFileNames->empty())
   {
     vtkErrorMacro( << "Either a filename was not specified or the specified directory does not contain any DICOM images.");
     this->SetErrorCode( vtkErrorCode::NoFileNameError );
@@ -293,7 +293,7 @@ void vtkDICOMImageReader::ExecuteDataWithInformation(vtkDataObject *output,
       iData -= rowLength;
     }
   }
-  else if (this->DICOMFileNames->size() > 0)
+  else if (!this->DICOMFileNames->empty())
   {
     vtkDebugMacro( << "Multiple files (" << static_cast<int>(this->DICOMFileNames->size()) << ")");
     this->Parser->ClearAllDICOMTagCallbacks();
@@ -315,7 +315,7 @@ void vtkDICOMImageReader::ExecuteDataWithInformation(vtkDataObject *output,
 
     for (fiter = this->DICOMFileNames->begin();
          fiter != this->DICOMFileNames->end();
-         fiter++)
+         ++fiter)
     {
       count++;
       const char *file = fiter->c_str();

@@ -16,7 +16,7 @@
 
 #include "vtkObjectFactory.h"
 
-#if defined(__BORLANDC__)
+#if defined(__BORLANDC__) && (__BORLANDC__ < 0x660)
 # pragma warn -8012 /* signed/unsigned comparison */
 #endif
 
@@ -41,7 +41,7 @@
   #include <netdb.h>
   #include <unistd.h>
   #include <sys/time.h>
-  #include <errno.h>
+  #include <cerrno>
   #include <cstring>
   #include <cstdio>
 #endif

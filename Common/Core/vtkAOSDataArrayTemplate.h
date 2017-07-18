@@ -20,7 +20,7 @@
  *
  * vtkGenericDataArray specialization that stores data array in the traditional
  * VTK memory layout where a 3 component is stored in contiguous memory as
- * \c A1A2A2B1B2B3C1C2C3 ... where A,B,C,... are tuples.
+ * \c A1A2A3B1B2B3C1C2C3 ... where A,B,C,... are tuples.
  *
  * This replaces vtkDataArrayTemplate.
  *
@@ -50,8 +50,9 @@ public:
 
   enum DeleteMethod
   {
-    VTK_DATA_ARRAY_FREE=vtkBuffer<ValueType>::VTK_DATA_ARRAY_FREE,
-    VTK_DATA_ARRAY_DELETE=vtkBuffer<ValueType>::VTK_DATA_ARRAY_DELETE
+    VTK_DATA_ARRAY_FREE=vtkAbstractArray::VTK_DATA_ARRAY_FREE,
+    VTK_DATA_ARRAY_DELETE=vtkAbstractArray::VTK_DATA_ARRAY_DELETE,
+    VTK_DATA_ARRAY_ALIGNED_FREE=vtkAbstractArray::VTK_DATA_ARRAY_ALIGNED_FREE
   };
 
   static vtkAOSDataArrayTemplate* New();
@@ -118,6 +119,21 @@ public:
 
   //@{
   /**
+   * Set component @a comp of all tuples to @a value.
+   */
+  void FillTypedComponent(int compIdx, ValueType value) VTK_OVERRIDE;
+  //@}
+
+  //@{
+  /**
+   * Set all the values in array to @a value.
+   */
+  void FillValue(ValueType value) VTK_OVERRIDE;
+  void Fill(double value) VTK_OVERRIDE;
+  //@}
+
+  //@{
+  /**
    * Get the address of a particular data index. Make sure data is allocated
    * for the number of items requested. Set MaxId according to the number of
    * data values requested.
@@ -148,14 +164,44 @@ public:
    * suppled array. If specified, the delete method determines how the data
    * array will be deallocated. If the delete method is
    * VTK_DATA_ARRAY_FREE, free() will be used. If the delete method is
-   * DELETE, delete[] will be used. The default is FREE.
+   * VTK_DATA_ARRAY_DELETE, delete[] will be used. If the delete method is
+   * VTK_DATA_ARRAY_ALIGNED_FREE _aligned_free() will be used on windows, while
+   * free() will be used everywhere else. The default is FREE.
    */
-  void SetArray(ValueType* array, vtkIdType size, int save, int deleteMethod);
-  void SetArray(ValueType* array, vtkIdType size, int save);
+  void SetArray(VTK_ZEROCOPY ValueType* array, vtkIdType size, int save,
+                int deleteMethod);
+  void SetArray(VTK_ZEROCOPY ValueType* array, vtkIdType size, int save);
   void SetVoidArray(void* array, vtkIdType size, int save) VTK_OVERRIDE;
   void SetVoidArray(void* array, vtkIdType size, int save,
                     int deleteMethod) VTK_OVERRIDE;
   //@}
+
+  // Overridden for optimized implementations:
+  void SetTuple(vtkIdType tupleIdx, const float *tuple) VTK_OVERRIDE;
+  void SetTuple(vtkIdType tupleIdx, const double *tuple) VTK_OVERRIDE;
+  // MSVC doesn't like 'using' here (error C2487). Just forward instead:
+  // using Superclass::SetTuple;
+  void SetTuple(vtkIdType dstTupleIdx, vtkIdType srcTupleIdx,
+                vtkAbstractArray *source) VTK_OVERRIDE
+  { this->Superclass::SetTuple(dstTupleIdx, srcTupleIdx, source); }
+  void InsertTuple(vtkIdType tupleIdx, const float *source) VTK_OVERRIDE;
+  void InsertTuple(vtkIdType tupleIdx, const double *source) VTK_OVERRIDE;
+  // MSVC doesn't like 'using' here (error C2487). Just forward instead:
+  // using Superclass::InsertTuple;
+  void InsertTuple(vtkIdType dstTupleIdx, vtkIdType srcTupleIdx,
+                   vtkAbstractArray *source) VTK_OVERRIDE
+  { this->Superclass::InsertTuple(dstTupleIdx, srcTupleIdx, source); }
+  void InsertComponent(vtkIdType tupleIdx, int compIdx,
+                       double value) VTK_OVERRIDE;
+  vtkIdType InsertNextTuple(const float *tuple) VTK_OVERRIDE;
+  vtkIdType InsertNextTuple(const double *tuple) VTK_OVERRIDE;
+  // MSVC doesn't like 'using' here (error C2487). Just forward instead:
+  // using Superclass::InsertNextTuple;
+  vtkIdType InsertNextTuple(vtkIdType srcTupleIdx,
+                            vtkAbstractArray *source) VTK_OVERRIDE
+  { return this->Superclass::InsertNextTuple(srcTupleIdx, source); }
+  void GetTuple(vtkIdType tupleIdx, double * tuple) VTK_OVERRIDE;
+  double *GetTuple(vtkIdType tupleIdx) VTK_OVERRIDE;
 
   /**
    * Tell the array explicitly that a single data element has
@@ -277,17 +323,9 @@ vtkArrayDownCast_TemplateFastCastMacro(vtkAOSDataArrayTemplate)
   T *GetValueRange(int comp); \
   T *GetValueRange(); \
   T* WritePointer(vtkIdType id, vtkIdType number); \
-  T* GetPointer(vtkIdType id)/*; \
-
-  * These methods are not wrapped to avoid wrappers exposing these
-  * easy-to-get-wrong methods because passing in the wrong value for 'save' is
-  * guaranteed to cause a memory issue down the line. Either the wrappers
-  * didn't use malloc to allocate the memory or the memory isn't actually
-  * persisted because a temporary array is used that doesn't persist like this
-  * method expects.
-
-  void SetArray(T* array, vtkIdType size, int save); \
-  void SetArray(T* array, vtkIdType size, int save, int deleteMethod) */
+  T* GetPointer(vtkIdType id); \
+  void SetArray(VTK_ZEROCOPY T* array, vtkIdType size, int save); \
+  void SetArray(VTK_ZEROCOPY T* array, vtkIdType size, int save, int deleteMethod)
 
 #endif // header guard
 

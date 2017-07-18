@@ -108,7 +108,8 @@ int vtkPDataSetWriter::Write()
   // Lets compute the file root from the file name supplied by the user.
   length = static_cast<int>(strlen(this->FileName));
   fileRoot = new char [length+1];
-  fileName = new char [length+strlen(this->FilePattern)+20];
+  size_t fileNameSize = length+strlen(this->FilePattern)+20;
+  fileName = new char [fileNameSize];
   strncpy(fileRoot, this->FileName, length);
   fileRoot[length] = '\0';
   // Trim off the pvtk extension.
@@ -170,7 +171,7 @@ int vtkPDataSetWriter::Write()
   vtkDataObject *copy;
   for (i = this->StartPiece; i <= this->EndPiece; ++i)
   {
-    sprintf(fileName, this->FilePattern, fileRoot, i);
+    snprintf(fileName, fileNameSize, this->FilePattern, fileRoot, i);
     writer->SetFileName(fileName);
     inputAlg->UpdatePiece(i, this->NumberOfPieces, this->GhostLevel);
 
@@ -238,7 +239,8 @@ int vtkPDataSetWriter::Write()
     {
       case VTK_POLY_DATA:
       case VTK_UNSTRUCTURED_GRID:
-        if (!this->WriteUnstructuredMetaData(input, fileRoot, fileName, fptr))
+        if (!this->WriteUnstructuredMetaData(input, fileRoot,
+                                             fileName, fileNameSize, fptr))
         {
           this->CloseVTKFile(fptr);
           remove(this->FileName);
@@ -252,7 +254,7 @@ int vtkPDataSetWriter::Write()
       case VTK_IMAGE_DATA:
       case VTK_STRUCTURED_POINTS:
         if (!this->WriteImageMetaData((vtkImageData*)input, fileRoot,
-                                      fileName, fptr))
+                                      fileName, fileNameSize, fptr))
         {
           this->CloseVTKFile(fptr);
           remove(this->FileName);
@@ -265,7 +267,8 @@ int vtkPDataSetWriter::Write()
         break;
       case VTK_RECTILINEAR_GRID:
         if (!this->WriteRectilinearGridMetaData((vtkRectilinearGrid*)input,
-                                                fileRoot, fileName, fptr))
+                                                fileRoot, fileName,
+                                                fileNameSize, fptr))
         {
           this->CloseVTKFile(fptr);
           remove(this->FileName);
@@ -278,7 +281,8 @@ int vtkPDataSetWriter::Write()
         break;
       case VTK_STRUCTURED_GRID:
         if (!this->WriteStructuredGridMetaData((vtkStructuredGrid*)input,
-                                               fileRoot, fileName, fptr))
+                                               fileRoot, fileName,
+                                               fileNameSize, fptr))
         {
           this->CloseVTKFile(fptr);
           remove(this->FileName);
@@ -303,7 +307,8 @@ int vtkPDataSetWriter::Write()
 
 //----------------------------------------------------------------------------
 int vtkPDataSetWriter::WriteUnstructuredMetaData(vtkDataSet *input,
-                                         char *root, char *str, ostream *fptr)
+                                         char *root, char *str,
+                                         size_t strSize, ostream *fptr)
 {
   int i;
 
@@ -314,7 +319,7 @@ int vtkPDataSetWriter::WriteUnstructuredMetaData(vtkDataSet *input,
   *fptr << "      numberOfPieces=\"" << this->NumberOfPieces << "\" >" << endl;
   for (i = 0; i < this->NumberOfPieces; ++i)
   {
-    sprintf(str, this->FilePattern, root, i);
+    snprintf(str, strSize, this->FilePattern, root, i);
     *fptr << "  <Piece fileName=\"" << str << "\" />" << endl;
   }
   *fptr << "</File>" << endl;
@@ -329,7 +334,8 @@ int vtkPDataSetWriter::WriteUnstructuredMetaData(vtkDataSet *input,
 
 //----------------------------------------------------------------------------
 int vtkPDataSetWriter::WriteImageMetaData(vtkImageData * input,
-                                          char *root, char *str, ostream *fptr)
+                                          char *root, char *str,
+                                          size_t strSize, ostream *fptr)
 {
   int *pi;
   double *pf;
@@ -367,7 +373,7 @@ int vtkPDataSetWriter::WriteImageMetaData(vtkImageData * input,
     int nRanks = this->Controller->GetNumberOfProcesses();
 
     int nPiecesTotal = 0;
-    vtkIdType nPieces = this->Extents.size();
+    vtkIdType nPieces = static_cast<vtkIdType>(this->Extents.size());
 
     vtkIdType* offsets = 0;
     vtkIdType* nPiecesAll = 0;
@@ -394,7 +400,7 @@ int vtkPDataSetWriter::WriteImageMetaData(vtkImageData * input,
     {
       sendBuffer = new int[sendSize];
       ExtentsType::iterator iter = this->Extents.begin();
-      for (int count = 0; iter != this->Extents.end(); iter++, count++)
+      for (int count = 0; iter != this->Extents.end(); ++iter, ++count)
       {
         sendBuffer[count*7] = iter->first;
         memcpy(&sendBuffer[count*7+1], &iter->second[0], 6*sizeof(int));
@@ -433,7 +439,7 @@ int vtkPDataSetWriter::WriteImageMetaData(vtkImageData * input,
   for (int i = 0; i < this->NumberOfPieces; ++i)
   {
     pi = &this->Extents[i][0];
-    sprintf(str, this->FilePattern, root, i);
+    snprintf(str, strSize, this->FilePattern, root, i);
     *fptr << "  <Piece fileName=\"" << str << "\"" << endl
           << "      extent=\"" << pi[0] << " " << pi[1] << " " << pi[2] << " "
           << pi[3] << " " << pi[4] << " " << pi[5] << "\" />" << endl;
@@ -449,7 +455,8 @@ int vtkPDataSetWriter::WriteImageMetaData(vtkImageData * input,
 
 //----------------------------------------------------------------------------
 int vtkPDataSetWriter::WriteRectilinearGridMetaData(vtkRectilinearGrid *input,
-                                         char *root, char *str, ostream *fptr)
+                                         char *root, char *str,
+                                         size_t strSize, ostream *fptr)
 {
   int i;
   int *pi;
@@ -469,7 +476,7 @@ int vtkPDataSetWriter::WriteRectilinearGridMetaData(vtkRectilinearGrid *input,
   for (i = 0; i < this->NumberOfPieces; ++i)
   {
     pi = &this->Extents[i][0];
-    sprintf(str, this->FilePattern, root, i);
+    snprintf(str, strSize, this->FilePattern, root, i);
     *fptr << "  <Piece fileName=\"" << str << "\"" << endl
           << "      extent=\"" << pi[0] << " " << pi[1] << " " << pi[2] << " "
           << pi[3] << " " << pi[4] << " " << pi[5] << "\" />" << endl;
@@ -486,7 +493,8 @@ int vtkPDataSetWriter::WriteRectilinearGridMetaData(vtkRectilinearGrid *input,
 
 //----------------------------------------------------------------------------
 int vtkPDataSetWriter::WriteStructuredGridMetaData(vtkStructuredGrid *input,
-                                         char *root, char *str, ostream *fptr)
+                                         char *root, char *str,
+                                         size_t strSize, ostream *fptr)
 {
   int i;
   int *pi;
@@ -506,7 +514,7 @@ int vtkPDataSetWriter::WriteStructuredGridMetaData(vtkStructuredGrid *input,
   for (i = 0; i < this->NumberOfPieces; ++i)
   {
     pi = &this->Extents[i][0];
-    sprintf(str, this->FilePattern, root, i);
+    snprintf(str, strSize, this->FilePattern, root, i);
     *fptr << "  <Piece fileName=\"" << str << "\"" << endl
           << "      extent=\"" << pi[0] << " " << pi[1] << " " << pi[2] << " "
           << pi[3] << " " << pi[4] << " " << pi[5] << "\" />" << endl;
@@ -545,7 +553,8 @@ void vtkPDataSetWriter::DeleteFiles()
   int i;
   int length = static_cast<int>(strlen(this->FileName));
   char *fileRoot = new char[length+1];
-  char *fileName = new char[length+strlen(this->FilePattern)+20];
+  size_t fileNameSize = length+strlen(this->FilePattern)+20;
+  char *fileName = new char[fileNameSize];
 
   strncpy(fileRoot, this->FileName, length);
   fileRoot[length] = '\0';
@@ -588,7 +597,7 @@ void vtkPDataSetWriter::DeleteFiles()
 
   for (i = this->StartPiece; i <= this->EndPiece; i++)
   {
-    sprintf(fileName, this->FilePattern, fileRoot, i);
+    snprintf(fileName, fileNameSize, this->FilePattern, fileRoot, i);
     remove(fileName);
   }
 

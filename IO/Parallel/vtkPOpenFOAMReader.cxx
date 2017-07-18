@@ -136,12 +136,12 @@ int vtkPOpenFOAMReader::RequestInformation(vtkInformation *request,
   }
 
   if (*this->Superclass::FileNameOld != this->Superclass::FileName
-      || this->Superclass::ListTimeStepsByControlDict
-          != this->Superclass::ListTimeStepsByControlDictOld
+      || this->Superclass::ListTimeStepsByControlDict != this->Superclass::ListTimeStepsByControlDictOld
+      || this->Superclass::SkipZeroTime != this->Superclass::SkipZeroTimeOld
       || this->Superclass::Refresh)
   {
     // retain selection status when just refreshing a case
-    if (*this->Superclass::FileNameOld != "" && *this->Superclass::FileNameOld != this->Superclass::FileName)
+    if (!this->Superclass::FileNameOld->empty() && *this->Superclass::FileNameOld != this->Superclass::FileName)
     {
       // clear selections
       this->Superclass::CellDataArraySelection->RemoveAllArrays();
@@ -207,7 +207,9 @@ int vtkPOpenFOAMReader::RequestInformation(vtkInformation *request,
         vtkOpenFOAMReader *masterReader = vtkOpenFOAMReader::New();
         masterReader->SetFileName(this->FileName);
         masterReader->SetParent(this);
+        masterReader->SetSkipZeroTime(this->SkipZeroTime);
         masterReader->SetUse64BitLabels(this->Use64BitLabels);
+        masterReader->SetUse64BitFloats(this->Use64BitFloats);
         if (!masterReader->MakeInformationVector(outputVector, procNames
         ->GetValue(0)) || !masterReader->MakeMetaDataAtTimeStep(true))
         {
@@ -265,6 +267,7 @@ int vtkPOpenFOAMReader::RequestInformation(vtkInformation *request,
       subReader->SetFileName(this->FileName);
       subReader->SetParent(this);
       subReader->SetUse64BitLabels(this->Use64BitLabels);
+      subReader->SetUse64BitFloats(this->Use64BitFloats);
       // if getting metadata failed simply delete the reader instance
       if (subReader->MakeInformationVector(NULL, procNames->GetValue(procI))
           && subReader->MakeMetaDataAtTimeStep(true))

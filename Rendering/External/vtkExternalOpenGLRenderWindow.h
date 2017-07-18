@@ -50,24 +50,18 @@ class VTKRENDERINGEXTERNAL_EXPORT vtkExternalOpenGLRenderWindow :
 public:
   static vtkExternalOpenGLRenderWindow *New();
   vtkTypeMacro(vtkExternalOpenGLRenderWindow, vtkGenericOpenGLRenderWindow);
-  void PrintSelf(ostream &os, vtkIndent indent);
+  void PrintSelf(ostream &os, vtkIndent indent) VTK_OVERRIDE;
 
   /**
    * Begin the rendering process using the existing context.
    */
-  void Start(void);
-
-  /**
-   * This computes the size of the render window
-   * before calling the superclass' Render() method
-   */
-  void Render();
+  void Start(void) VTK_OVERRIDE;
 
   /**
    * Tells if this window is the current graphics context for the calling
    * thread.
    */
-  virtual bool IsCurrent();
+  bool IsCurrent() VTK_OVERRIDE;
 
   //@{
   /**
@@ -88,7 +82,7 @@ public:
 
 protected:
   vtkExternalOpenGLRenderWindow();
-  ~vtkExternalOpenGLRenderWindow();
+  ~vtkExternalOpenGLRenderWindow() VTK_OVERRIDE;
 
   int AutomaticWindowPositionAndResize;
 

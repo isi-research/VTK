@@ -30,21 +30,22 @@
 #include "vtkIOExportModule.h" // For export macro
 #include "vtkExporter.h"
 
-class vtkLight;
 class vtkActor;
 class vtkActor2D;
-class vtkPoints;
 class vtkDataArray;
+class vtkLight;
+class vtkPoints;
+class vtkPolyData;
+class vtkRenderer;
 class vtkUnsignedCharArray;
 class vtkX3DExporterWriter;
-class vtkRenderer;
 
 class VTKIOEXPORT_EXPORT vtkX3DExporter : public vtkExporter
 {
 public:
   static vtkX3DExporter *New();
   vtkTypeMacro(vtkX3DExporter,vtkExporter);
-  void PrintSelf(ostream& os, vtkIndent indent);
+  void PrintSelf(ostream& os, vtkIndent indent) VTK_OVERRIDE;
 
   //@{
   /**
@@ -112,7 +113,7 @@ public:
 
 protected:
   vtkX3DExporter();
-  ~vtkX3DExporter();
+  ~vtkX3DExporter() VTK_OVERRIDE;
 
   // Stream management
   int WriteToOutputString;
@@ -122,11 +123,12 @@ protected:
   /**
    * Write data to output.
    */
-  void WriteData();
+  void WriteData() VTK_OVERRIDE;
 
   void WriteALight(vtkLight *aLight, vtkX3DExporterWriter* writer);
   void WriteAnActor(vtkActor *anActor, vtkX3DExporterWriter* writer,
     int index);
+  void WriteAPiece(vtkPolyData* piece, vtkActor *anActor, vtkX3DExporterWriter* writer, int index);
   void WritePointData(vtkPoints *points, vtkDataArray *normals,
     vtkDataArray *tcoords, vtkUnsignedCharArray *colors,
     vtkX3DExporterWriter* writer, int index);

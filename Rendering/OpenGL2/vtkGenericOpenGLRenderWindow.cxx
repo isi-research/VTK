@@ -25,9 +25,11 @@ vtkStandardNewMacro(vtkGenericOpenGLRenderWindow);
 
 vtkGenericOpenGLRenderWindow::vtkGenericOpenGLRenderWindow()
 {
+  this->ReadyForRendering = true;
   this->DirectStatus = 0;
   this->CurrentStatus = false;
   this->SupportsOpenGLStatus = 0;
+  this->ForceMaximumHardwareLineWidth = 0;
 }
 
 vtkGenericOpenGLRenderWindow::~vtkGenericOpenGLRenderWindow()
@@ -46,6 +48,12 @@ vtkGenericOpenGLRenderWindow::~vtkGenericOpenGLRenderWindow()
 void vtkGenericOpenGLRenderWindow::PrintSelf(ostream& os, vtkIndent indent)
 {
   this->Superclass::PrintSelf(os, indent);
+}
+
+float vtkGenericOpenGLRenderWindow::GetMaximumHardwareLineWidth()
+{
+  return this->ForceMaximumHardwareLineWidth > 0 ? this->ForceMaximumHardwareLineWidth
+                                                 : this->Superclass::GetMaximumHardwareLineWidth();
 }
 
 void vtkGenericOpenGLRenderWindow::SetFrontBuffer(unsigned int b)
@@ -219,4 +227,18 @@ void vtkGenericOpenGLRenderWindow::SetSupportsOpenGL(int newValue)
 void vtkGenericOpenGLRenderWindow::SetIsCurrent(bool newValue)
 {
   this->CurrentStatus = newValue;
+}
+
+void vtkGenericOpenGLRenderWindow::Render()
+{
+  if (this->ReadyForRendering)
+  {
+    // Query current GL state and store them
+    this->SaveGLState();
+
+    this->Superclass::Render();
+
+    // Restore state to previous known value
+    this->RestoreGLState();
+  }
 }

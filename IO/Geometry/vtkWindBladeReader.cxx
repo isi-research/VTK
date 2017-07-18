@@ -1556,7 +1556,7 @@ bool vtkWindBladeReader::SetUpGlobalData(const std::string &fileName,
     vtkWarningMacro("Could not open the global .wind file " << fileName);
   }
 
-  std::string::size_type dirPos = std::string(fileName).rfind("/");
+  std::string::size_type dirPos = std::string(fileName).rfind('/');
   if (dirPos == std::string::npos)
   {
     vtkWarningMacro("Bad input file name " << fileName);
@@ -1575,7 +1575,7 @@ bool vtkWindBladeReader::SetUpGlobalData(const std::string &fileName,
       std::string::size_type keyPos = line.find(' ');
       keyword = line.substr(0, keyPos);
       rest = line.substr(keyPos + 1);
-      std::istringstream lineStr(rest.c_str());
+      std::istringstream lineStr(rest);
 
       // Header information
       if (keyword == "WIND_HEADER_VERSION")
