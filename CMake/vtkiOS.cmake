@@ -94,6 +94,7 @@ mark_as_advanced(
 option(Module_vtkRenderingOpenGL2 "Include Polygonal Rendering Support" ON)
 option(Module_vtkInteractionWidgets "Include InteractionWidgets module" OFF)
 option(Module_vtkIOXML "Include IO/XML Module" OFF)
+option(Module_vtkDICOM "Turn on or off this module" OFF)
 option(Module_vtkFiltersModeling "Turn on or off this module" OFF)
 option(Module_vtkFiltersSources "Turn on or off this module" OFF)
 option(Module_vtkIOGeometry "Turn on or off this module" OFF)
@@ -102,6 +103,7 @@ option(Module_vtkIOImage "Turn on or off this module" OFF)
 option(Module_vtkIOPLY "Turn on or off this module" OFF)
 option(Module_vtkIOInfovis "Turn on or off this module" OFF)
 option(Module_vtkRenderingFreeType "Turn on or off this module" OFF)
+option(Module_vtkRenderingImage "Turn on or off this module" OFF)
 option(Module_vtkRenderingVolumeOpenGL2 "Include Volume Rendering Support" ON)
 option(Module_vtkRenderingLOD "Include LOD Rendering Support" OFF)
 
@@ -125,6 +127,7 @@ set(ios_cmake_flags
   -DModule_vtkRenderingOpenGL2:BOOL=${Module_vtkRenderingOpenGL2}
   -DModule_vtkInteractionWidgets:BOOL=${Module_vtkInteractionWidgets}
   -DModule_vtkIOXML:BOOL=${Module_vtkIOXML}
+  -DModule_vtkDICOM:BOOL=${Module_vtkDICOM}
   -DModule_vtkFiltersModeling:BOOL=${Module_vtkFiltersModeling}
   -DModule_vtkFiltersSources:BOOL=${Module_vtkFiltersSources}
   -DModule_vtkIOGeometry:BOOL=${Module_vtkIOGeometry}
@@ -133,9 +136,17 @@ set(ios_cmake_flags
   -DModule_vtkIOPLY:BOOL=${Module_vtkIOPLY}
   -DModule_vtkIOInfovis:BOOL=${Module_vtkIOInfovis}
   -DModule_vtkRenderingFreeType:BOOL=${Module_vtkRenderingFreeType}
+  -DModule_vtkRenderingImage:BOOL=${Module_vtkRenderingImage}
   -DModule_vtkRenderingVolumeOpenGL2:BOOL=${Module_vtkRenderingVolumeOpenGL2}
   -DModule_vtkRenderingLOD:BOOL=${Module_vtkRenderingLOD}
 )
+
+if (Module_vtkDICOM AND IOS_EMBED_BITCODE)
+  # libvtkzlib does not contain bitcode
+  list (APPEND ios_cmake_flags
+    -DBUILD_DICOM_PROGRAMS:BOOL=OFF
+    )
+endif()
 
 if (Module_vtkRenderingOpenGL2 OR Module_vtkRenderingVolumeOpenGL2)
   list (APPEND ios_cmake_flags
