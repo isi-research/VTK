@@ -128,6 +128,7 @@ set(ios_cmake_flags
   -DBUILD_TESTING:BOOL=OFF
   -DBUILD_EXAMPLES:BOOL=${BUILD_EXAMPLES}
   -DVTK_USE_64BIT_IDS:BOOL=OFF
+  -DVTK_USE_SYSTEM_ZLIB:BOOL=ON
   -DVTK_Group_Rendering:BOOL=OFF
   -DVTK_Group_StandAlone:BOOL=OFF
   -DVTK_Group_Imaging:BOOL=OFF
@@ -152,13 +153,6 @@ set(ios_cmake_flags
   -DModule_vtkRenderingVolumeOpenGL2:BOOL=${Module_vtkRenderingVolumeOpenGL2}
   -DModule_vtkRenderingLOD:BOOL=${Module_vtkRenderingLOD}
 )
-
-if (Module_vtkDICOM AND IOS_EMBED_BITCODE)
-  # libvtkzlib does not contain bitcode
-  list (APPEND ios_cmake_flags
-    -DBUILD_DICOM_PROGRAMS:BOOL=OFF
-    )
-endif()
 
 if (Module_vtkRenderingOpenGL2 OR Module_vtkRenderingVolumeOpenGL2)
   list (APPEND ios_cmake_flags
