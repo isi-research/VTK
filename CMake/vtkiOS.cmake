@@ -119,6 +119,8 @@ option(Module_vtkRenderingImage "Turn on or off this module" OFF)
 option(Module_vtkRenderingVolumeOpenGL2 "Include Volume Rendering Support" ON)
 option(Module_vtkRenderingLOD "Include LOD Rendering Support" OFF)
 
+option(USE_GDCM "Build vtk-dicom with GDCM" OFF)
+set(GDCM_DIR "" CACHE PATH "Path to GDCM install used by vtk-dicom")
 
 mark_as_advanced(Module_${vtk-module})
 
@@ -152,6 +154,8 @@ set(ios_cmake_flags
   -DModule_vtkRenderingImage:BOOL=${Module_vtkRenderingImage}
   -DModule_vtkRenderingVolumeOpenGL2:BOOL=${Module_vtkRenderingVolumeOpenGL2}
   -DModule_vtkRenderingLOD:BOOL=${Module_vtkRenderingLOD}
+  -DUSE_GDCM:BOOL=${USE_GDCM}
+  -DGDCM_DIR:PATH=${GDCM_DIR}
 )
 
 if (Module_vtkRenderingOpenGL2 OR Module_vtkRenderingVolumeOpenGL2)
